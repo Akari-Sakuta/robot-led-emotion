@@ -1,0 +1,706 @@
+/* ====================
+全体レイアウト
+==================== */
+/* body全体の設定 */
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* ★ 修正点: コンテンツを上部に寄せる */
+    min-height: 100vh; /* 画面いっぱいに広げる */
+    background-color: #f0f0f0;
+    margin: 0;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-x: hidden; /* ★ 修正点: 水平方向のスクロールを無効にする */
+}
+
+/* ロボットとコントロールパネルのコンテナ */
+.container {
+    display: flex;
+    flex-direction: row; /* ★ 修正点: 横に並べる */
+    align-items: center;
+    justify-content: center;
+    gap: 50px; /* ★ 修正点: 要素間の間隔を調整 */
+    margin: 40px auto; /* ★ 修正点: 上下のマージンを調整 */
+    flex-wrap: wrap; /* ★ 修正点: 画面幅が狭い場合は折り返す */
+}
+
+/* タイマーコンテナのスタイル */
+.timer-container {
+    position: fixed; /* 画面に固定 */
+    top: 20px; /* 上からの距離 */
+    right: 20px; /* 右からの距離 */
+    background-color: rgba(255, 255, 255);
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    font-size: 1.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    z-index: 1000; /* 他の要素より手前に表示 */
+}
+
+/* pタグ全体の文字サイズと配置 */
+p {
+    font-size: 1.1rem;
+    max-width: 850px; /* 文章の幅を制限 */
+    line-height: 1.6;
+    margin: 10px auto; /* 上下のマージンと中央配置 */
+    text-align: left; /* 左揃え */
+}
+
+/* 太字にする部分のスタイル */
+.emotion-text-bold {
+    font-weight: bold;
+}
+
+/* ====================
+ロボットのデザイン
+==================== */
+/* ロボット全体のコンテナ */
+.robot {
+    width: 300px;
+    height: 400px;
+    position: relative;
+    background-image: url('robot_body.png'); /* 3D画像を背景に設定 */
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 50px;
+}
+
+/* 目の位置とサイズ調整 */
+.eyes {
+    position: absolute;
+    top: 120px; /* 目の位置を調整 */
+    left: 51.5%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 46px; /* 目と目の間の間隔 */
+}
+/* 個々の目全体（LED消灯時のグレー部分） */
+.eye {
+    width: 32px;
+    height: 32px;
+    background-color: #808080; /* LED消灯部分（グレー）を常に表示 */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+/* LED点灯部分 */
+.led {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-sizing: border-box;
+    animation-duration: 1s;
+    animation-duration: var(--animation-duration); /* CSS変数を適用 */
+    animation-iteration-count: infinite; /* アニメーションを無限に繰り返す */
+    animation-timing-function: linear; /* 速度を一定にする */
+    position: absolute; /* 親要素の.eyeに対して絶対配置 */
+    top: 0; left: 0;
+}
+/* 黒目（瞳孔） */
+.eye::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background-color: rgb(30, 30, 30);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* 目のハイライト（擬似要素で表現） */
+.eye::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%); /* 中心が白く、外側が透明になるグラデーション */
+    border-radius: 50%;
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+/* ====================
+コントロールパネル
+==================== */
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    flex-shrink: 0; /* ★ 修正点: 縮小されないようにする */
+}
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.control-group label {
+    font-weight: bold;
+}
+
+/* 色相環の配置スタイル */
+.color-options {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 20px auto;
+}
+.color-options button {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid #333;
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* ====================
+LEDアニメーションの定義
+==================== */
+/* 点滅アニメーション（瞬間的な ON/OFF） */
+@keyframes step-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+/* 点滅アニメーション（滑らかなON/OFF） */
+@keyframes fade-blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+/* 回転アニメーション（時計回り） */
+@keyframes rotate-sector {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+/* 回転アニメーション（反時計回り） */
+@keyframes rotate-sector-reverse {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(-360deg); }
+}
+
+/* 下へ流れるアニメーション（左右分割） */
+@keyframes split-drop-left {
+    0% {
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(-180deg); }
+    55% { opacity: 0; }
+    100% {
+        opacity: 0;
+        transform: rotate(-360deg);
+    }
+}
+@keyframes split-drop-right {
+    0% {
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(180deg); }
+    55% { opacity: 0; }
+    100% {
+        opacity: 0;
+        transform: rotate(360deg);
+    }
+}
+/* split-dropパターン選択時のLEDに疑似要素を追加 */
+.led.split-drop {
+    border: none;
+    position: relative; /* 疑似要素の基準となるように設定 */
+    /* 疑似要素と重ねて表示するために、背景を透明に */
+    background: transparent !important;
+}
+/* ::before 疑似要素に左回転アニメーションを適用 */
+.led.split-drop::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    animation-name: split-drop-left;
+    animation-duration: var(--animation-duration); /* JSから変数を受け取る */
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    background-image: var(--split-drop-gradient); /* JSからグラデーションを受け取る */
+}
+/* ::after 疑似要素に右回転アニメーションを適用 */
+.led.split-drop::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    animation-name: split-drop-right;
+    animation-duration: var(--animation-duration); /* JSから変数を受け取る */
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    background-image: var(--split-drop-gradient); /* JSからグラデーションを受け取る */
+}
+
+/* 上へ流れるアニメーション（左右分割） */
+@keyframes split-up-left {
+    0% {
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(180deg);
+    }
+    55% { opacity: 0; }
+    100% {
+        opacity: 0;
+        transform: rotate(360deg);
+    }
+}
+@keyframes split-up-right {
+    0% {
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(-180deg);
+    }
+    55% { opacity: 0; }
+    100% {
+        opacity: 0;
+        transform: rotate(-360deg);
+    }
+}
+/* split-up パターン選択時のLEDスタイルを追加 */
+.led.split-up {
+    border: none;
+    position: relative;
+    background: transparent !important;
+}
+/* ::before 疑似要素に左回転アニメーションを適用 */
+.led.split-up::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    animation-name: split-up-left;
+    animation-duration: var(--animation-duration);
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    background-image: var(--split-up-gradient);
+}
+/* ::after 疑似要素に右回転アニメーションを適用 */
+.led.split-up::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    animation-name: split-up-right;
+    animation-duration: var(--animation-duration);
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    background-image: var(--split-up-gradient);
+}
+
+.led.rotate, .led.split-drop, .led.split-up {
+    border: none;
+}
+
+/* 進捗バーのコンテナ */
+.progress-bar-container {
+    width: 80%;
+    height: 20px;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px auto 10px;
+}
+/* 進捗バー本体 */
+.progress-bar {
+    height: 100%;
+    width: 0;
+    background-color: #4caf50;
+    transition: width 0.5s ease-in-out;
+}
+/* 進捗テキスト */
+.progress-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* ====================
+各ボタンの定義
+==================== */
+/* 「同意して続ける」ボタンの表示 */
+#start-button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    margin-top: 30px; /* 他の要素との間に余白を作成 */
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+#start-button:hover {
+    background-color: #0056b3;
+}
+
+/* 「タスクを開始する」ボタンの表示 */
+#task-intro-button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    margin-top: 30px; /* 他の要素との間に余白を作成 */
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+#task-intro-button:hover {
+    background-color: #0056b3;
+}
+
+/* 「次へ」ボタンの表示 */
+#submit-selection-button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    margin-top: 30px; /* 他の要素との間に余白を作成 */
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+#submit-selection-button:hover {
+    background-color: #0056b3;
+}
+
+/* 終了ボタンのコンテナスタイル */
+.end-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+#end-button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+#end-button:hover {
+    background-color: #0056b3;
+}
+
+/* 「戻る」ボタンのコンテナ */
+.back-button-container {
+    position: fixed; /* 画面に固定 */
+    bottom: 20px; /* 下からの距離 */
+    left: 20px; /* 左からの距離 */
+    z-index: 1002; /* 他の要素より手前に表示 */
+}
+#back-button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #f48236; /* ボタンの色 */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+#back-button:hover {
+    background-color: #d37e2f; /* ホバー時の色 */
+}
+#end-button.disabled {
+    background-color: #a0a0a0;
+    cursor: not-allowed;
+}
+#end-button.disabled:hover {
+    background-color: #a0a0a0;
+}
+
+/* ポップアップのボタン */
+#confirm-yes {
+    background-color: #4CAF50;
+    color: white;
+}
+#confirm-yes:hover {
+    background-color: #3f9241;
+}
+#confirm-no {
+    background-color: #fd3d2f;
+    color: white;
+}
+#confirm-no:hover {
+    background-color: #e03c30;
+}
+
+/* 「次のタスクへ」ボタンの表示 */
+/*#next-task-button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    margin-top: 30px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+#next-task-button:hover {
+    background-color: #0056b3;
+    margin-top: 20px;
+}*/
+
+/* タスク説明ページの文章を左揃えに */
+.left-aligned-p {
+    text-align: left;
+    max-width: 600px;
+    margin: 10px auto;
+}
+/* タスク説明ページの箇条書きを左揃えに */
+.left-aligned-list {
+    text-align: left;
+    max-width: 600px;
+    margin: 10px auto;
+}
+.left-aligned-list li {
+    font-size: 1.1rem;
+    line-height: 1.3;
+    list-style-position: inside; /* 箇条書き記号を内側に配置 */
+}
+
+/* 設定結果の表示スタイル */
+#results-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    display: flex; /* Flexboxを有効にする */
+    flex-direction: column; /* 項目を縦方向に並べる */
+    justify-content: center; /* 垂直方向の中央揃え */
+    align-items: center; /* 水平方向の中央揃え */
+    z-index: 1001;
+    text-align: left; /* テキストは左揃えを維持 */
+}
+#results-page h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    /* 中央揃えの親要素内で左揃えにするため、幅を設定しmargin: auto 0; で中央寄せする */
+    width: 300px; /* テキストブロックの幅を固定 (必要に応じて調整) */
+    text-align: center; /* h2自体は中央揃え */
+}
+#results-page p {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    width: 300px; /* テキストブロックの幅を固定 (h2と同じか調整) */
+    text-align: left; /* pタグ内のテキストは左揃え */
+}
+#results-page button {
+    margin-top: 20px; /* ボタンと上の要素との間に余白 */
+}
+
+/* 最終ページ */
+#final-page, #exit-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 1001;
+    font-size: 1.5rem; /* 最終ページ全体の文字を大きくする */
+}
+#final-page h2, #exit-page h1 {
+    font-size: 1.5rem; /* 見出しの文字をさらに大きくする */
+    margin-bottom: 30px;
+}
+#final-page p, #exit-page p {
+    font-size: 1.2rem; /* 段落の文字を調整 */
+    margin: 5px 0;
+}
+
+/* プログレスバーのコンテナ */
+.progress-bar-container {
+    width: 50%;
+    height: 10px;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px auto 10px;
+}
+/* プログレスバー本体 */
+.progress-bar {
+    height: 100%;
+    width: 0;
+    background-color: #4caf50;
+    transition: width 0.5s ease-in-out;
+}
+/* 進捗テキスト */
+.progress-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* ページ全体を覆うスタイル */
+.page-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    z-index: 1003;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+.page-container h1 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.page-container p {
+    max-width: 700px;
+    line-height: 1.3;
+    text-align: left;
+}
+.page-container button, .page-container input, .page-container select {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* 選択画面のレイアウト */
+.selection-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+    max-width: 400px;
+    width: 100%;
+    margin-top: 30px;
+}
+.selection-form .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+}
+.selection-form label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.selection-form input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.selection-form .radio-group {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+/* 年齢入力エラー時のスタイル */
+input.error {
+    background-color: #ff5b5b36;
+    border-color: #ff0000;
+}
+.error-message {
+    color: #ff0000;
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+/* ポップアップ関連のスタイル */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    font-size: 1.1rem;
+    max-width: 400px; /* ポップアップの最大幅を設定 */
+}
+.modal-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+.modal-buttons button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+.modal-content p {
+    text-align: left; /* ポップアップ内のpタグも左揃え */
+}

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ロボット感情表現実験</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 説明画面 -->
+    <div id="intro-page" class="page-container">
+        <h1>ロボットの感情表現に関する調査</h1>
+        <p><strong>【注意事項】<br>
+            ・実験はパソコンから参加する必要があります。<br>
+            ・画面サイズ等の問題で、実験用サイトが開けない場合は、タスクに参加いただくことはできません。</strong><br>
+
+        <br>【この実験の目的・概要】<br>
+            この実験は「ロボットの感情表現の方法に関する研究」の一環として実施されるものです。<br>
+            本実験では、ロボットの黒目の周りに表示される光のパターンが、人間の感情をどのように表現するかを調査します。
+            参加者の皆様には、画面上部に提示される感情（例：「喜び」）に対し、最も近いと感じる光の組み合わせを、色、発光パターン、動く速さの3つの要素を組み合わせて作成していただきます。<br>
+            また、年齢や性別などをお尋ねするアンケートや、タスクに対する理解度や集中度を調べる質問にもお答えいただきます。<br>
+            タスクをしているときに少し疲れたり、飽きたりすることもあるかもしれませんが、基本的に強いストレスを感じるものではないと考えております。
+            もし途中で不快になったときなどには、いつでも実験を中止できます（下記の「この実験への参加と途中辞退の自由」をご覧ください）。<br>
+
+        <br>【この実験の所要時間】<br>
+            すべてのタスクを終えるのに個人差はありますが<strong>10分程度</strong>かかる見込みです。
+            なお、制限時間は30分です。
+            30分を経過すると報酬を受けられません。<br>
+
+        <br>【この実験に参加いただける方】<br>
+            <strong>色覚異常を有しておらず</strong>、日本語を母語とする方で、10分程度集中してまじめにタスクに取り組んでいただける方。<br>
+
+        <br>【この実験への参加と途中辞退の自由】<br>
+            この実験はタスクを開始した後でも、いつでも理由の如何を問わず、参加を取りやめることができます。<br>
+            ただし、タスクをすべて完了しなかった場合には、作業承認されない（報酬が支払われない）ことをご了承ください。<br>
+
+        <br>【この実験のデータの利用】<br>
+            本実験のデータはまとめて統計的に処理され、その結果は学会発表や学術雑誌およびデータベース上等で公表されます。<br>
+            ただし、本実験では、あなた個人を特定できるような情報は収集されませんので、あなた個人の情報が公開されることはありません。<br>
+            なお、本実験で得られたデータの分析や研究にあたっては、研究目的達成に必要な範囲内において本データを利用します。<br>
+
+        <br>【その他の注意事項】<br>
+            上記に記載されている本実験の参加・実施にかかわる条件を満たしていない場合は、募集内容どおりにタスクを完了したとはみなせず、作業承認できないことをご了承ください。<br>
+        
+        <br>この実験の参加に同意いただける方は、以下のボタンをクリックして続けてください。</p>
+        <button id="start-button">同意して続ける</button>
+    </div>
+
+    <!-- 選択画面 -->
+    <div id="selection-page" class="page-container" style="display: none;">
+        <form class="selection-form">
+            <div class="form-group">
+                <label for="age-input">年齢（半角数字）</label>
+                <input type="text" id="age-input" placeholder="例: 25">
+                <span id="age-error" class="error-message"></span>
+            </div>
+            <div class="form-group">
+                <label>性別</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="gender" value="男性"> 男性</label>
+                    <label><input type="radio" name="gender" value="女性"> 女性</label>
+                    <label><input type="radio" name="gender" value="その他"> その他</label>
+                    <label><input type="radio" name="gender" value="回答しない"> 回答しない</label>
+                </div>
+                <span id="gender-error" class="error-message"></span>
+            </div>
+            <div class="form-group">
+                <label>色覚異常の有無</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="color-blind" value="あり"> あり</label>
+                    <label><input type="radio" name="color-blind" value="なし"> なし</label>
+                </div>
+                <span id="color-blind-error" class="error-message"></span>
+            </div>
+        </form>
+
+        <button id="submit-selection-button">次へ</button>
+    </div>
+    
+    <!-- 退出画面 -->
+    <div id="exit-page" style="display: none;">
+        <h1>調査を中断します</h1>
+        <p>申し訳ございませんが、こちらは色を使った調査のためご参加いただけません。</p>
+        <p>Yahoo!クラウドソーシングでこのタスクを中断し、この画面を閉じてください。</p>
+    </div>
+    
+    <!-- タスク説明ページ -->
+    <div id="task-intro-page" class="page-container" style="display: none;">
+        <h1>タスクの説明</h1>
+        <p>この実験では、ロボットの黒目の周りにある光によって感情を表現します。<br>
+        <br>画面上部に提示される感情（例：「喜び」）を表していると感じる光を、以下の項目を組み合わせて作成してください。</p>
+        <ul class="left-aligned-list">
+            <li>色：8色</li>
+            <li>発光パターン（点滅など）：6通り</li>
+            <li>光が動く速さ：10段階</li>
+        </ul>
+        <p>光の組み合わせを作成するタスクは全部で10タスクあります。<br>
+        <br>各タスクは<strong>1分間操作しないと次のタスクへ進むことができません。</strong><br>
+            <strong>ただし1分経過後も操作は可能です。</strong><br>
+            提示されている感情を表現できたと思う組み合わせになるまで、焦らずに作業を続けてください。<br>
+        <br>感情の作成の途中で確認タスクがあります。<br>
+            確認タスクでは、表示されている組み合わせを正しく回答してください。<br>
+            （確認タスクは回答完了後、ただちに次のタスクへ進むことができます）</p>
+        <button id="task-intro-button">タスクを開始する</button>
+    </div>
+
+    <!-- ロボットページ -->
+    <div id="robot-page" style="display: none;">
+        <div class="progress-bar-container">
+            <div class="progress-bar"></div>
+        </div>
+        <div class="progress-text">
+            <span id="current-set">1</span> / <span id="total-sets">10</span>
+        </div>
+        
+        <div class="back-button-container">
+            <button id="back-button">戻る</button>
+        </div>
+
+        <!--<h1>ロボット感情表現実験</h1>-->
+        <p>このロボットが「<span id="emotion-text" class="emotion-text-bold">感情と確認タスク</span>」を表現するように目の組み合わせを作成してください。</p>
+        <div class="timer-container" id="timer-container">
+            <span id="timer-display">00:00</span>
+        </div>
+
+        <div class="end-button-container" id="end-button-container">
+            <button id="end-button" style="display: none;">次のタスクへ</button>
+        </div>
+
+        <div class="container">
+            <div class="robot">
+                <div class="eyes">
+                    <div class="eye">
+                        <div class="led" id="left-eye-led"></div>
+                    </div>
+                    <div class="eye">
+                        <div class="led" id="right-eye-led"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label for="color">色</label>
+                    <div class="color-options">
+                    </div>
+                </div>
+                <hr>
+                <div class="control-group">
+                    <label for="pattern">発光パターン</label>
+                    <select id="pattern" onchange="setPattern()">
+                        <option value="step-blink">点滅（チカチカ）</option>
+                        <option value="fade-blink">点滅（滑らか）</option>
+                        <option value="rotate">回転（回転方向一致）</option>
+                        <option value="asymmetric-rotate">回転（回転方向不一致）</option>
+                        <option value="split-drop">下へ流れる</option>
+                        <option value="split-up">上へ流れる</option>
+                    </select>
+                </div>
+                <hr>
+                <div class="control-group">
+                    <label for="intensity">速さ (<span id="intensity-value">5</span>)</label>
+                    <input type="range" id="intensity" min="1" max="10" value="5" oninput="setIntensity()">
+                </div>
+            </div>
+        </div>
+        
+        <div id="results-page" style="display: none;">
+            <h2>設定結果</h2>
+            <p>・選択した色：<span id="result-color"></span></p>
+            <p>・選択した発光パターン：<span id="result-pattern"></span></p>
+            <p>・選択した速さ：<span id="result-intensity"></span></p>
+            
+            <button id="next-task-button">次のタスクへ</button>
+        </div>
+    </div>
+    
+    <!-- 最終ページ -->
+    <div id="final-page" style="display: none;">
+        <h2>ご協力ありがとうございました</h2>
+        <p>Googleフォームで以下のパスワードを入力してください。</p>
+        <p>（報酬のお支払いのために必要です）</p>
+        <p></p>
+        <p>パスワード：<span id="password-display"></span></p>
+        <p></p>
+        <p>パスワードを入力するまで、このページを閉じないでください。</p>
+        <p>※一度このページを閉じると、上記のパスワードは表示できません。</p>
+    </div>
+
+    <!-- 終了確認ポップアップ -->
+    <div id="confirmation-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <p id="confirmation-message">終了すると設定の修正はできません。</p>
+                <p id="confirmation-message">よろしいですか？</p>
+            <div class="modal-buttons">
+                <button id="confirm-no">キャンセル</button>
+                <button id="confirm-yes">終了</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
