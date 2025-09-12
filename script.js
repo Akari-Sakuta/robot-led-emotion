@@ -2,36 +2,29 @@
 const leftEyeLed = document.getElementById('left-eye-led');
 const rightEyeLed = document.getElementById('right-eye-led');
 const intensityValueSpan = document.getElementById('intensity-value');
-let currentColor = 'red'; // 現在選択されている色を保持する変数
-const colorOptionsDiv = document.querySelector('.color-options');
-
-// 使用する色の定義
-const colors = [
-    'red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta'
-];
-
-// 各色のRGBA値を定義
-const colorMap = {
-    'red': 'rgba(255, 0, 0, 1)',
-    'orange': 'rgba(255, 165, 0, 1)',
-    'yellow': 'rgba(255, 255, 0, 1)',
-    'green': 'rgba(0, 128, 0, 1)',
-    'cyan': 'rgba(0, 255, 255, 1)',
-    'blue': 'rgba(0, 0, 255, 1)',
-    'purple': 'rgba(128, 0, 128, 1)',
-    'magenta': 'rgba(255, 0, 255, 1)'
-};
+let currentColor = '#ff0000'; // 現在選択されている色を保持する変数 (カラーコード形式に)
+const colorWheelCanvas = document.getElementById('color-wheel');
+const ctx = colorWheelCanvas ? colorWheelCanvas.getContext('2d') : null;
 
 // 選択項目を保持するグローバル変数
 // 初期値は、ページの初期表示値に合わせて設定する
-let selectedColorIndex = 1;
+let selectedColorIndex = '#ff0000'; // カラーコードで保存
 let selectedPatternIndex = 1;
-let selectedIntensityIndex = 5;
+let selectedIntensityIndex = 2500;
 
 // 選択項目を一時的に保存する配列
 const savedSelections = [];
 // 各タスクで時間が経過したかどうかを保存する配列
 const taskCompleted = [];
+// 各タスクに初めてアクセスしたかどうかを記録する配列
+const hasVisitedTask = [];
+
+// 参加者情報を保持するグローバル変数
+let participantData = {};
+// 目の状態をアクティブにするかどうかを管理するフラグ
+let isEyeActive = false;
+// ユーザーが選択を行ったかどうかを追跡するフラグ
+let hasMadeSelection = false;
 
 // DOM要素の取得: タイマー機能
 const timerDisplay = document.getElementById('timer-display');
@@ -44,30 +37,30 @@ let currentSet = 1;
 const totalSets = 10;
 const emotionList = [
     '怒り',
-    '緑、点滅(チカチカ)、速さ4',
+    '黄、点滅(チカチカ)、速さ1200~1400ms',
     '恐れ',
     '信頼',
     '嫌悪',
     '驚き',
     '期待',
-    '赤、下へ流れる、速さ2',
+    'ピンク、下へ流れる、速さ3600~3800ms',
     '悲しみ',
     '喜び'
 ];
 
 // DOM要素の取得: 結果の表示画面
-const resultsPage = document.getElementById('results-page');
 const resultColorSpan = document.getElementById('result-color');
 const resultPatternSpan = document.getElementById('result-pattern');
 const resultIntensitySpan = document.getElementById('result-intensity');
 
 // DOM要素の取得: 各ボタン
 let endButton;
-let nextTaskButton;
 let backButton;
 let startButton;
 let submitSelectionButton;
 let taskIntroButton;
+let confirmYesButton;
+let confirmNoButton;
 
 // Googleフォームの項目IDとURLを定義
 const GOOGLE_FORM_URL = 'https://docs.google.com/forms/u/0/d/e/1FAIpQLSfq_hRIW0YguOmrTz_N_01j5Yl2PspdSc5IMLgpXhIxZ4B3fg/formResponse';
@@ -75,13 +68,13 @@ const GOOGLE_FORM_URL = 'https://docs.google.com/forms/u/0/d/e/1FAIpQLSfq_hRIW0Y
 // 各タスク（感情）ごとの質問IDをオブジェクトにまとめて管理
 const GOOGLE_FORM_ENTRIES = {
     '怒り': { color: 'entry.491303356', pattern: 'entry.409806865', intensity: 'entry.1878336323' },
-    '緑、点滅(チカチカ)、速さ4': { color: 'entry.1204286337', pattern: 'entry.802237711', intensity: 'entry.1801506477' },
+    '黄、点滅(チカチカ)、速さ1200~1400ms': { color: 'entry.1204286337', pattern: 'entry.802237711', intensity: 'entry.1801506477' },
     '恐れ': { color: 'entry.777098917', pattern: 'entry.589697965', intensity: 'entry.2113351545' },
     '信頼': { color: 'entry.1742265329', pattern: 'entry.245111734', intensity: 'entry.2028868153' },
     '嫌悪': { color: 'entry.350150990', pattern: 'entry.1570778382', intensity: 'entry.833062927' },
     '驚き': { color: 'entry.286520453', pattern: 'entry.102870304', intensity: 'entry.1927795365' },
     '期待': { color: 'entry.652292470', pattern: 'entry.585916459', intensity: 'entry.944012706' },
-    '赤、下へ流れる、速さ2': { color: 'entry.512180379', pattern: 'entry.2063122289', intensity: 'entry.1130457384' },
+    'ピンク、下へ流れる、速さ3600~3800ms': { color: 'entry.512180379', pattern: 'entry.2063122289', intensity: 'entry.1130457384' },
     '悲しみ': { color: 'entry.996065062', pattern: 'entry.5850225', intensity: 'entry.1817038972' },
     '喜び': { color: 'entry.1073520370', pattern: 'entry.1512407861', intensity: 'entry.1185022503' }
 };
@@ -94,34 +87,146 @@ const PARTICIPANT_FORM_ENTRIES = {
 };
 
 /**
- * 色選択ボタンを色相環状に配置する関数
- * この関数は、`colors`配列に基づいて動的にボタンを生成します。
+ * canvasにグラデーションの円環を描画する関数
  */
-function positionColorButtons() {
-    // 既存のボタンをすべて削除
-    while (colorOptionsDiv.firstChild) {
-        colorOptionsDiv.removeChild(colorOptionsDiv.firstChild);
+function drawColorWheel() {
+    if (!ctx) return;
+    const centerX = colorWheelCanvas.width / 2;
+    const centerY = colorWheelCanvas.height / 2;
+    const outerRadius = 75;
+
+    // グラデーションの作成
+    const gradient = ctx.createConicGradient(0, centerX, centerY);
+    gradient.addColorStop(0, '#FF0000');
+    gradient.addColorStop(0.166, '#FFFF00');
+    gradient.addColorStop(0.333, '#00FF00');
+    gradient.addColorStop(0.5, '#00FFFF');
+    gradient.addColorStop(0.666, '#0000FF');
+    gradient.addColorStop(0.833, '#FF00FF');
+    gradient.addColorStop(1, '#FF0000');
+
+    // 円環の描画
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
+    ctx.arc(centerX, centerY, 50, 0, 2 * Math.PI, true);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.closePath();
+}
+
+/**
+ * canvasがクリックされた位置から色を取得する関数
+ */
+function getColorFromWheel(e) {
+    if (!ctx) return;
+    const rect = colorWheelCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const centerX = colorWheelCanvas.width / 2;
+    const centerY = colorWheelCanvas.height / 2;
+    
+    // クリック位置の角度を計算する
+    let angle = Math.atan2(y - centerY, x - centerX) * 180 / Math.PI;
+    // 角度を0〜360度の範囲に調整
+    if (angle < 0) {
+        angle += 360;
     }
     
-    const radius = 65; // 円の半径
-    const totalColors = colors.length;
-    const angleIncrement = (2 * Math.PI) / totalColors; // 角度の増分
+    // 角度から色を計算
+    const hue = angle;
+    // HSLからRGBに変換
+    const s = 1;
+    const l = 0.5;
+    
+    let r, g, b;
+    if (s === 0) {
+        r = g = b = l; // achromatic
+    } else {
+        const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, hue / 360 + 1 / 3);
+        g = hue2rgb(p, q, hue / 360);
+        b = hue2rgb(p, q, hue / 360 - 1 / 3);
+    }
 
-    colors.forEach((color, index) => {
-        const angle = index * angleIncrement - Math.PI / 2; // 上から開始するために調整
-        const x = radius * Math.cos(angle);
-        const y = radius * Math.sin(angle);
+    const hexColor = '#' + ('00' + (Math.round(r * 255)).toString(16)).slice(-2) +
+        ('00' + (Math.round(g * 255)).toString(16)).slice(-2) +
+        ('00' + (Math.round(b * 255)).toString(16)).slice(-2);
+        
+    setColor(hexColor);
+}
 
-        const button = document.createElement('button');
-        button.className = color;
-        button.style.backgroundColor = color;
-        button.style.position = 'absolute';
-        button.style.left = `calc(50% + ${x}px)`;
-        button.style.top = `calc(50% + ${y}px)`;
-        button.style.transform = 'translate(-50%, -50%)';
-        button.onclick = () => setColor(color, index); // クリックイベントを設定
-        colorOptionsDiv.appendChild(button);
-    });
+/**
+ * RGBから16進数に変換するヘルパー関数
+ */
+function rgbToHex(r, g, b) {
+    if (r > 255 || g > 255 || b > 255) throw "Invalid color component";
+    return ((r << 16) | (g << 8) | b).toString(16);
+}
+
+/**
+ * 色選択ボタンがクリックされた時の処理
+ * @param {string} color - 選択されたカラーコード (例: '#ff0000')
+ */
+function setColor(color) { 
+    isEyeActive = true;
+    hasMadeSelection = true;
+    currentColor = color;
+    selectedColorIndex = color;
+    const currentPattern = document.getElementById('pattern').value;
+    const currentIntensity = document.getElementById('intensity').value;
+    updateLeds(currentColor, currentPattern, currentIntensity);
+    saveCurrentSelection();
+}
+
+/**
+ * パターンが変更された時の処理
+ */
+function setPattern() {
+    isEyeActive = true;
+    hasMadeSelection = true;
+    const patternSelect = document.getElementById('pattern');
+    const currentPattern = patternSelect.value;
+    const currentIntensity = document.getElementById('intensity').value;
+    selectedPatternIndex = patternSelect.selectedIndex + 1;
+    updateLeds(currentColor, currentPattern, currentIntensity);
+    saveCurrentSelection();
+}
+
+/**
+ * 速さが変更された時の処理
+ */
+function setIntensity() {
+    isEyeActive = true;
+    hasMadeSelection = true;
+    const currentPattern = document.getElementById('pattern').value;
+    const currentIntensity = document.getElementById('intensity').value;
+    selectedIntensityIndex = currentIntensity;
+    intensityValueSpan.textContent = currentIntensity;
+    updateLeds(currentColor, currentPattern, currentIntensity);
+    saveCurrentSelection();
+}
+
+/**
+ * 現在の選択内容を保存する関数
+ * 各UI操作の直後に呼び出すことで、リアルタイムに状態を保存します。
+ */
+function saveCurrentSelection() {
+    const currentTaskData = {
+        color: selectedColorIndex,
+        pattern: selectedPatternIndex,
+        intensity: selectedIntensityIndex
+    };
+    savedSelections[currentSet - 1] = currentTaskData;
 }
 
 /**
@@ -132,8 +237,19 @@ function positionColorButtons() {
  * @param {number} intensity - 選択された強度
  */
 function updateLeds(color, pattern, intensity) {
-    // 速さの計算部分
-    const duration = 0.2 * (11 - intensity);
+    // もし目が非アクティブ状態なら、グレーのままアニメーションを停止
+    if (!isEyeActive) {
+        leftEyeLed.style.cssText = '';
+        rightEyeLed.style.cssText = '';
+        leftEyeLed.style.backgroundColor = '#808080';
+        rightEyeLed.style.backgroundColor = '#808080';
+        leftEyeLed.style.animationName = 'none';
+        rightEyeLed.style.animationName = 'none';
+        return;
+    }
+    
+    // 速さの計算
+    const duration = intensity;
 
     // すべてのスタイルをリセット
     leftEyeLed.style.cssText = '';
@@ -152,11 +268,22 @@ function updateLeds(color, pattern, intensity) {
     rightEyeLed.style.removeProperty('--animation-duration');
 
     // わずかな遅延を挟んでから、新しいアニメーションを適用
-    void leftEyeLed.offsetWidth; // 強制的にリフローを発生させる
-    void rightEyeLed.offsetWidth; // 強制的にリフローを発生させる
+    void leftEyeLed.offsetWidth;
+    void rightEyeLed.offsetWidth;
     
-    const rgbaColor = colorMap[color];
-    
+    // RGBから16進数に変換するヘルパー関数
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+
+    const rgb = hexToRgb(color);
+    const rgbaColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`;
+
     // --- 各発光パターンの処理 ---
     if (pattern === 'step-blink') {
         // 点滅（断続）: 透明度を瞬間的に切り替えて点滅を表現
@@ -181,7 +308,6 @@ function updateLeds(color, pattern, intensity) {
         rightEyeLed.style.backgroundImage = conicGradient;
         leftEyeLed.classList.add('rotate');
         rightEyeLed.classList.add('rotate');
-        // 回転方向を決定
         if (pattern === 'rotate') {
             leftEyeLed.style.animationName = 'rotate-sector';
             rightEyeLed.style.animationName = 'rotate-sector';
@@ -193,72 +319,33 @@ function updateLeds(color, pattern, intensity) {
         // 下へ流れる（左右分割）
         leftEyeLed.classList.add('split-drop');
         rightEyeLed.classList.add('split-drop');
-        // conic-gradientの定義
         const splitGradient = `
             conic-gradient(from -22deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg),
             conic-gradient(from -22deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg)
         `;
-        // CSS変数を設定
         leftEyeLed.style.setProperty('--split-drop-gradient', splitGradient);
         rightEyeLed.style.setProperty('--split-drop-gradient', splitGradient);
-        leftEyeLed.style.setProperty('--animation-duration', duration + 's');
-        rightEyeLed.style.setProperty('--animation-duration', duration + 's');
+        leftEyeLed.style.setProperty('--animation-duration', duration + 'ms');
+        rightEyeLed.style.setProperty('--animation-duration', duration + 'ms');
     } else if (pattern === 'split-up') {
         // 上へ流れる（左右分割）
         leftEyeLed.classList.add('split-up');
         rightEyeLed.classList.add('split-up');
-        // conic-gradientの開始位置を真下（90deg）に設定
         const upGradient = `
             conic-gradient(from 158deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg),
             conic-gradient(from 158deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg)
         `;
-        // CSS変数を設定
         leftEyeLed.style.setProperty('--split-up-gradient', upGradient);
         rightEyeLed.style.setProperty('--split-up-gradient', upGradient);
-        leftEyeLed.style.setProperty('--animation-duration', duration + 's');
-        rightEyeLed.style.setProperty('--animation-duration', duration + 's');
+        leftEyeLed.style.setProperty('--animation-duration', duration + 'ms');
+        rightEyeLed.style.setProperty('--animation-duration', duration + 'ms');
     }
     
     // 共通のアニメーション設定
-    leftEyeLed.style.animationDuration = duration + 's';
-    rightEyeLed.style.animationDuration = duration + 's';
+    leftEyeLed.style.animationDuration = duration + 'ms';
+    rightEyeLed.style.animationDuration = duration + 'ms';
     leftEyeLed.style.animationPlayState = 'running';
     rightEyeLed.style.animationPlayState = 'running';
-}
-
-/**
- * 色選択ボタンがクリックされた時の処理
- * @param {string} color - 選択された色の名前
- * @param {number} index - 0から始まるインデックス
- */
-function setColor(color, index) { 
-    currentColor = color;
-    selectedColorIndex = index + 1; // 1から始まる番号に変換
-    const currentPattern = document.getElementById('pattern').value;
-    const currentIntensity = document.getElementById('intensity').value;
-    updateLeds(currentColor, currentPattern, currentIntensity);
-}
-
-/**
- * パターンが変更された時の処理
- */
-function setPattern() {
-    const patternSelect = document.getElementById('pattern');
-    const currentPattern = patternSelect.value;
-    const currentIntensity = document.getElementById('intensity').value;
-    selectedPatternIndex = patternSelect.selectedIndex + 1; // 1から始まる番号に変換
-    updateLeds(currentColor, currentPattern, currentIntensity);
-}
-
-/**
- * 強度が変更された時の処理
- */
-function setIntensity() {
-    const currentPattern = document.getElementById('pattern').value;
-    const currentIntensity = document.getElementById('intensity').value;
-    selectedIntensityIndex = currentIntensity;
-    intensityValueSpan.textContent = currentIntensity;
-    updateLeds(currentColor, currentPattern, currentIntensity);
 }
 
 /**
@@ -271,6 +358,7 @@ function showIntroPage() {
     document.getElementById('robot-page').style.display = 'none';
     document.getElementById('final-page').style.display = 'none';
     document.getElementById('exit-page').style.display = 'none';
+    document.getElementById('forced-exit-page').style.display = 'none';
     
     // ラジオボタンの初期状態を未選択に
     const genderRadios = document.querySelectorAll('input[name="gender"]');
@@ -299,20 +387,28 @@ function showTaskIntroPage() {
  * 実験退出画面を表示する関数
  */
 function showExitPage() {
+    clearInterval(timerInterval);
     document.getElementById('selection-page').style.display = 'none';
     document.getElementById('exit-page').style.display = 'flex';
+}
+
+/**
+ * 強制退出画面を表示する関数
+ */
+function showForcedExitPage() {
+    clearInterval(timerInterval);
+    document.getElementById('robot-page').style.display = 'none';
+    document.getElementById('forced-exit-page').style.display = 'flex';
 }
 
 /**
  * ページの初期状態をリセットし、メインページを開始する関数
  */
 function startMainPage() {
-    // イントロページと選択ページを非表示に
     document.getElementById('intro-page').style.display = 'none';
     document.getElementById('selection-page').style.display = 'none';
     document.getElementById('exit-page').style.display = 'none';
     document.getElementById('task-intro-page').style.display = 'none';
-    // メインページの要素を表示する
     document.getElementById('robot-page').style.display = 'block';
     document.querySelector('h1').style.display = 'block';
     document.querySelector('p').style.display = 'block';
@@ -320,10 +416,9 @@ function startMainPage() {
     document.getElementById('end-button-container').style.display = 'block';
     document.querySelector('.container').style.display = 'flex';
     document.querySelector('.back-button-container').style.display = 'block';
-    // 結果ページと最終ページを非表示にする
-    document.getElementById('results-page').style.display = 'none';
+    drawColorWheel();
     document.getElementById('final-page').style.display = 'none';
-    // 終了ボタンを非表示にする
+    document.getElementById('forced-exit-page').style.display = 'none';
     document.getElementById('end-button').style.display = 'none';
 
     // タイマーをリセットして再開
@@ -331,10 +426,9 @@ function startMainPage() {
     seconds = 0;
     minutes = 0;
     document.getElementById('timer-display').textContent = '00:00';
-        startTimer();
+    startTimer();
 
     // ここでendButtonの無効化・有効化を制御
-    // ボタンの無効化/有効化はタイマーに任せる
     if (taskCompleted[currentSet - 1]) {
         document.getElementById('end-button').classList.remove('disabled');
     } else {
@@ -349,27 +443,36 @@ function startMainPage() {
     // 上部の指示文の感情のテキストを更新
     const emotionTextSpan = document.getElementById('emotion-text');
     if (emotionTextSpan) {
-        // currentSet-1 をインデックスとして使用（0から始まる配列のため）
         emotionTextSpan.textContent = emotionList[currentSet - 1];
     }
 
     // UIの状態を復元
     const currentSelection = savedSelections[currentSet - 1];
-    const prevColorName = colors[currentSelection.color - 1];
+    const prevColor = currentSelection.color;
     const prevPatternValue = document.getElementById('pattern').options[currentSelection.pattern - 1].value;
     const prevIntensityValue = currentSelection.intensity;
 
     // UI要素の値を設定
-    currentColor = prevColorName;
-    selectedColorIndex = currentSelection.color;
+    currentColor = prevColor;
+    selectedColorIndex = prevColor;
     selectedPatternIndex = currentSelection.pattern;
     selectedIntensityIndex = prevIntensityValue;
     document.getElementById('pattern').value = prevPatternValue;
     document.getElementById('intensity').value = prevIntensityValue;
     intensityValueSpan.textContent = prevIntensityValue;
 
+    // タスクへの初回アクセスかどうかをチェック
+    if (!hasVisitedTask[currentSet - 1]) {
+        isEyeActive = false; // 初回は非アクティブに
+        hasMadeSelection = false; // 初回は未選択状態
+        hasVisitedTask[currentSet - 1] = true; // 訪問済みとしてマーク
+    } else {
+        isEyeActive = true; // 2回目以降はアクティブに
+        hasMadeSelection = true; // 2回目以降は選択済み状態
+    }
+
     // ロボットの目を更新
-    updateLeds(prevColorName, prevPatternValue, prevIntensityValue);
+    updateLeds(prevColor, prevPatternValue, prevIntensityValue);
 
     // 最終ページに到達した場合は戻るボタンを非表示にする
     if (currentSet === 1) {
@@ -384,39 +487,6 @@ function startMainPage() {
 }
 
 /**
- * 結果ページを表示する関数
- */
-/**function showResultsPage() {
-    document.querySelector('h1').style.display = 'none';
-    document.querySelector('p').style.display = 'none';
-    document.getElementById('timer-container').style.display = 'none';
-    document.getElementById('end-button-container').style.display = 'none';
-    document.querySelector('.container').style.display = 'none';
-    document.getElementById('final-page').style.display = 'none'; // 最終ページを非表示にする処理を追加
-    
-    // 結果ページを表示
-    document.getElementById('results-page').style.display = 'flex';
-
-    // 戻るボタンのコンテナを表示する
-    document.querySelector('.back-button-container').style.display = 'block';
-
-    // タイトルを更新
-    document.querySelector('#results-page h2').textContent = `タスク${currentSet}　設定結果`;
-
-    // 選択された項目を次のページに表示
-    document.getElementById('result-color').textContent = selectedColorIndex;
-    document.getElementById('result-pattern').textContent = selectedPatternIndex;
-    document.getElementById('result-intensity').textContent = selectedIntensityIndex;
-    
-    // 10セット完了後、ボタンの名前を変更
-    if (currentSet === totalSets) {
-        document.getElementById('next-task-button').textContent = 'タスクを終了する';
-    } else {
-        document.getElementById('next-task-button').textContent = '次のタスクへ';
-    }
-}*/
-
-/**
  * 最終ページを表示する関数
  */
 function showFinalPage() {
@@ -426,27 +496,82 @@ function showFinalPage() {
     document.getElementById('timer-container').style.display = 'none';
     document.getElementById('end-button-container').style.display = 'none';
     document.querySelector('.container').style.display = 'none';
-    document.getElementById('results-page').style.display = 'none'; // 結果ページも非表示にする
+    document.getElementById('forced-exit-page').style.display = 'none';
 
-    // 戻るボタンのコンテナを表示する
+    // 戻るボタンのコンテナを非表示にする
     document.querySelector('.back-button-container').style.display = 'none';
 
     // 最終ページを表示
     document.getElementById('final-page').style.display = 'flex';
-    document.getElementById('password-display').textContent = 'RobotEye2025'; // パスワードを設定
+    document.getElementById('password-display').textContent = 'RobotEye2025';
+}
+
+/**
+ * 警告ポップアップを表示する関数
+ * @param {string} message - ポップアップに表示するメッセージ
+ */
+function showWarningModal(message) {
+    document.getElementById('confirmation-modal').style.display = 'flex';
+    document.querySelector('#confirmation-modal .modal-content p').textContent = message;
+    
+    // 「はい」「いいえ」ボタンを非表示にする
+    document.getElementById('confirm-yes').style.display = 'none';
+    document.getElementById('confirm-no').style.display = 'none';
+    
+    // 警告ポップアップの場合、OKボタンだけを表示
+    let okButton = document.getElementById('ok-button');
+    if (!okButton) {
+        okButton = document.createElement('button');
+        okButton.id = 'ok-button';
+        okButton.textContent = '続ける';
+        // 警告ポップアップのボタンにスタイルを適用
+        okButton.classList.add('modal-buttons');
+        okButton.style.backgroundColor = '#007bff';
+        okButton.style.color = 'white';
+        okButton.style.border = 'none';
+        okButton.style.borderRadius = '5px';
+        okButton.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+
+        // ホバー効果も追加
+        okButton.onmouseover = () => { okButton.style.backgroundColor = '#0056b3'; };
+        okButton.onmouseout = () => { okButton.style.backgroundColor = '#007bff'; };
+
+        document.querySelector('#confirmation-modal .modal-buttons').appendChild(okButton);
+    }
+    
+    okButton.onclick = () => {
+        closeModal();
+    };
 }
 
 /**
  * 終了確認ポップアップを表示する関数
  */
-function showConfirmationModal() {
+function showEndConfirmationModal() {
     document.getElementById('confirmation-modal').style.display = 'flex';
+    document.querySelector('#confirmation-modal .modal-content p').innerHTML = '終了すると設定の変更はできません。<br>よろしいですか？';
+
+    // 「はい」「いいえ」ボタンを表示する
+    document.getElementById('confirm-yes').style.display = 'inline-block';
+    document.getElementById('confirm-no').style.display = 'inline-block';
+    
+    // 警告ポップアップのOKボタンを非表示にする
+    const okButton = document.getElementById('ok-button');
+    if (okButton) {
+        okButton.remove();
+    }
 }
+
 /**
- * 終了確認ポップアップを閉じる関数
+ * モーダルを閉じる共通関数
  */
-function closeConfirmationModal() {
+function closeModal() {
     document.getElementById('confirmation-modal').style.display = 'none';
+    // 警告ポップアップから戻った際にOKボタンを削除
+    const okButton = document.getElementById('ok-button');
+    if (okButton) {
+        okButton.remove();
+    }
 }
 
 /**
@@ -494,10 +619,9 @@ function validateParticipantData() {
 /**
  * データをGoogleフォームに送信する関数
  */
-function sendDataToGoogleForm(allData) {
+async function sendDataToGoogleForm(allData) {
     const dataToSend = {};
     
-    // 参加者情報を追加
     for (const key in participantData) {
         if (participantData.hasOwnProperty(key)) {
             if (PARTICIPANT_FORM_ENTRIES[key]) {
@@ -520,16 +644,21 @@ function sendDataToGoogleForm(allData) {
     const params = new URLSearchParams(dataToSend);
     const url = `${GOOGLE_FORM_URL}?${params.toString()}`;
     
-    fetch(url, {
-        method: 'POST',
-        mode: 'no-cors'
-    })
-    .then(() => {
+    //ターミナルで確認可能
+    console.log('--- Googleフォームに送信するデータ ---');
+    console.log(dataToSend);
+    console.log('---');
+
+    try {
+        await fetch(url, {
+            method: 'POST',
+            mode: 'no-cors'
+        });
         console.log('すべてのデータ送信に成功しました。');
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('データ送信中にエラーが発生しました:', error);
-    });
+        // エラーが発生しても、次の処理に進む
+    }
 }
 
 /**
@@ -545,6 +674,12 @@ function updateTimer() {
     if (seconds === 60) {
         seconds = 0;
         minutes++;
+    }
+    // 5分が経過したら強制退出画面を表示
+    if (minutes >= 5) {
+        closeModal();
+        showForcedExitPage();
+        return; // これ以上タイマーを更新しない
     }
     const formattedMinutes = formatTime(minutes);
     const formattedSeconds = formatTime(seconds);
@@ -576,36 +711,36 @@ function startTimer() {
  */ 
 document.addEventListener('DOMContentLoaded', () => {
     endButton = document.getElementById('end-button');
-    nextTaskButton = document.getElementById('next-task-button');
     backButton = document.getElementById('back-button');
     startButton = document.getElementById('start-button');
     submitSelectionButton = document.getElementById('submit-selection-button');
     taskIntroButton = document.getElementById('task-intro-button');
-    const confirmYesButton = document.getElementById('confirm-yes');
-    const confirmNoButton = document.getElementById('confirm-no');
+    confirmYesButton = document.getElementById('confirm-yes');
+    confirmNoButton = document.getElementById('confirm-no');
 
     // savedSelections配列を初期値で埋める
     for (let i = 0; i < totalSets; i++) {
         savedSelections.push({
-            color: 1, // 初期の色: 赤
-            pattern: 1, // 初期の発光パターン: 点滅（チカチカ）
-            intensity: 5  // 初期の発光速度: 5
+            color: '#ff0000',
+            pattern: 1,
+            intensity: 2500
         });
         taskCompleted.push(false);
+        hasVisitedTask.push(false);
     }
 
+    // 「同意して続ける」ボタンがクリックされたときの処理
     startButton.addEventListener('click', () => {
         showSelectionPage();
     });
 
+    // 「次へ」ボタンがクリックされたときの処理
     submitSelectionButton.addEventListener('click', () => {
-        // 入力チェック
         if (validateParticipantData()) {
             const colorBlindOption = document.querySelector('input[name="color-blind"]:checked').value;
             if (colorBlindOption === 'あり') {
                 showExitPage();
             } else {
-                // 参加者データを保存
                 participantData = {
                     'age': document.getElementById('age-input').value,
                     'gender': document.querySelector('input[name="gender"]:checked').value,
@@ -618,18 +753,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 「タスクを開始する」ボタンがクリックされたときの処理
     taskIntroButton.addEventListener('click', () => {
-        positionColorButtons();
+        drawColorWheel();
         startMainPage();
     });
 
-    // 「戻る」ボタンがクリックされた時の処理
+    // 「戻る」ボタンがクリックされたときの処理
     backButton.addEventListener('click', () => {
-        //const isIntroPageVisible = document.getElementById('intro-page').style.display === 'flex';
         const isSelectionPageVisible = document.getElementById('selection-page').style.display === 'flex';
         const isTaskIntroPageVisible = document.getElementById('task-intro-page').style.display === 'flex';
         const isRobotPageVisible = document.getElementById('robot-page').style.display === 'block';
-        //const isResultsPageVisible = document.getElementById('results-page').style.display === 'flex';
-        //const isFinalPageVisible = document.getElementById('final-page').style.display === 'flex';
 
         if (isSelectionPageVisible) {
             showIntroPage(); // 選択画面からイントロ画面に戻る
@@ -640,7 +772,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (isRobotPageVisible && currentSet > 1) {
             currentSet--;
             startMainPage(); // 1つ前のロボットページに戻る
-            document.getElementById('end-button').style.display = 'block';
         }
     });
 
@@ -649,51 +780,34 @@ document.addEventListener('DOMContentLoaded', () => {
         if (endButton.classList.contains('disabled')) {
             return; // ボタンが無効な場合は何もしない
         }
-
-        const currentTaskData = {
-            color: selectedColorIndex,
-            pattern: selectedPatternIndex,
-            intensity: selectedIntensityIndex
-        };
-
-        savedSelections[currentSet - 1] = currentTaskData;
-        clearInterval(timerInterval);
+        
+        // ユーザーが選択を行っていない場合は警告を表示
+        if (!hasMadeSelection) {
+            showWarningModal('組み合わせを作成してください'); // 警告ポップアップを表示
+            return;
+        }
 
         if (currentSet === totalSets) {
-            showConfirmationModal();
+            showEndConfirmationModal(); // 終了確認ポップアップを表示
         } else {
             currentSet++;
             startMainPage();
         }
     });
 
-    // 「次のタスクへ」ボタンがクリックされた時の処理
-    /**nextTaskButton.addEventListener('click', () => {
-        const currentTaskData = {
-            color: selectedColorIndex,
-            pattern: selectedPatternIndex,
-            intensity: selectedIntensityIndex
-        };
-        savedSelections[currentSet - 1] = currentTaskData;
-
-        if (currentSet === totalSets) {
-            sendDataToGoogleForm(savedSelections);
-            showFinalPage();
-        } else {
-            currentSet++;
-            startMainPage();
-        }
-    });*/
-
     // ポップアップのボタンイベントリスナー
-    confirmYesButton.addEventListener('click', () => {
-        closeConfirmationModal();
-        sendDataToGoogleForm(savedSelections);
+    confirmYesButton.addEventListener('click', async () => {
+        closeModal();
+        await sendDataToGoogleForm(savedSelections);
         showFinalPage();
     });
     confirmNoButton.addEventListener('click', () => {
-        closeConfirmationModal();
+        closeModal();
     });
+
+    if (colorWheelCanvas) {
+        colorWheelCanvas.addEventListener('click', getColorFromWheel);
+    }
 
     // アプリケーションはここからスタート
     showIntroPage();
