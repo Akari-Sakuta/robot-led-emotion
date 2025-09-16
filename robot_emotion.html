@@ -17,7 +17,7 @@
 
         <br>【この実験の目的・概要】<br>
             この実験は「ロボットの感情表現の方法に関する研究」の一環として実施されるものです。<br>
-            本実験では、ロボットの黒目の周りに表示される光のパターンが、人間の感情をどのように表現するかを調査します。
+            本実験では、ロボットの目の周りに表示される光のパターンが、人間の感情をどのように表現するかを調査します。
             参加者の皆様には、画面上部に提示される感情（例：「喜び」）に対し、最も近いと感じる光の組み合わせを、色、発光パターン、動く速さの3つの要素を組み合わせて作成していただきます。<br>
             また、年齢や性別などをお尋ねするアンケートや、タスクに対する理解度や集中度を調べる質問にもお答えいただきます。<br>
             タスクをしているときに少し疲れたり、飽きたりすることもあるかもしれませんが、基本的に強いストレスを感じるものではないと考えております。
@@ -41,9 +41,9 @@
             なお、本実験で得られたデータの分析や研究にあたっては、研究目的達成に必要な範囲内において本データを利用します。<br>
 
         <br>【その他の注意事項】<br>
-            上記に記載されている本実験の参加・実施にかかわる条件を満たしていない場合は、募集内容どおりにタスクを完了したとはみなせず、作業承認できないことをご了承ください。<br><br></p>
+            上記に記載されている本実験の参加・実施にかかわる条件を満たしていない場合は、募集内容どおりにタスクを完了したとはみなせず、作業承認できないことをご了承ください。<br>
         
-        <p>この実験の参加に同意いただける方は、以下のボタンをクリックして続けてください。</p>
+        <br>この実験の参加に同意いただける方は、以下のボタンをクリックして続けてください。</p>
         <button id="start-button">同意して続ける</button>
     </div>
 
@@ -88,7 +88,7 @@
     <!-- タスク説明ページ -->
     <div id="task-intro-page" class="page-container" style="display: none;">
         <h1>タスクの説明</h1>
-        <p>この実験では、ロボットの目の周りにある光によって感情を表現します。<br>
+        <p>この実験では、ロボットの黒目の周りにある光によって感情を表現します。<br>
         <br>画面上部に提示される感情（例：「喜び」）を表していると感じる光を、以下の項目を組み合わせて作成してください。</p>
         <ul class="left-aligned-list">
             <li>色：色相環のグラデーション内の各色</li>
@@ -102,10 +102,57 @@
             各タスク1分間は真剣に取り組んでいただけますと幸いです。<br>
         <br>感情の作成の途中で<strong>確認タスク</strong>があります。<br>
             確認タスクでは、表示されている組み合わせを正しく回答してください。<br>
-            （確認タスクは回答完了後、ただちに次のタスクへ進むことができます）</p>
-        <button id="task-intro-button">タスクを始める</button>
+            （確認タスクは回答完了後、ただちに次のタスクへ進むことができます）<br><br></p>
+        <p>以下のボタンをクリックすると、タスクの練習に移ります。</p>
+        <button id="task-intro-button">練習を始める</button>
     </div>
 
+    <!-- 練習ページ -->
+    <div id="practice-page" style="display: none;">
+        <div class="robot-controls-container">
+            <h1>こちらは練習ページです</h1>
+            <p>右側のコントロールパネルにある「色」「発光パターン」「速さ」を調節すると、ロボットの目の動作が変化します。</p>
+            <p>本番ではこの文章と同じ位置に「<strong>作成していただく感情</strong>」を記載していますので、確認して作成してください。</p>
+            <div class="container">
+                <div class="robot">
+                    <div class="eyes">
+                        <div class="eye">
+                            <div class="led" id="practice-left-eye-led"></div>
+                        </div>
+                        <div class="eye">
+                            <div class="led" id="practice-right-eye-led"></div>
+                        </div>
+                    </div>
+                </div>
+    
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="practice-color-canvas">色</label>
+                        <canvas id="practice-color-wheel-canvas" width="150" height="150"></canvas>
+                    </div>
+                    <hr>
+                    <div class="control-group">
+                        <label for="practice-pattern-select">発光パターン</label>
+                        <select id="practice-pattern-select">
+                            <option value="step-blink">点滅（チカチカ）</option>
+                            <option value="fade-blink">点滅（滑らか）</option>
+                            <option value="rotate">回転（回転方向一致）</option>
+                            <option value="asymmetric-rotate">回転（回転方向不一致）</option>
+                            <option value="split-drop">下へ流れる</option>
+                            <option value="split-up">上へ流れる</option>
+                        </select>
+                    </div>
+                    <hr>
+                    <div class="control-group">
+                        <label for="practice-intensity-range">速さ (<span id="practice-intensity-value">2500</span>ms)</label>
+                        <input type="range" id="practice-intensity-range" min="20" max="5000" value="2500">
+                    </div>
+                </div>
+            </div>
+            <button id="start-main-button">本番のタスクを開始する</button>
+        </div>
+    </div>
+    
     <!-- ロボットページ -->
     <div id="robot-page" style="display: none;">
         <div class="progress-bar-container">
@@ -142,14 +189,13 @@
 
             <div class="controls">
                 <div class="control-group">
-                    <label for="color">色</label>
-                    <!-- 色の選択をcanvasに変更 -->
-                    <canvas id="color-wheel" width="150" height="150"></canvas>
+                    <label for="color-canvas">色</label>
+                    <canvas id="color-wheel-canvas" width="150" height="150"></canvas>
                 </div>
                 <hr>
                 <div class="control-group">
-                    <label for="pattern">発光パターン</label>
-                    <select id="pattern" onchange="setPattern()">
+                    <label for="pattern-select">発光パターン</label>
+                    <select id="pattern-select">
                         <option value="step-blink">点滅（チカチカ）</option>
                         <option value="fade-blink">点滅（滑らか）</option>
                         <option value="rotate">回転（回転方向一致）</option>
@@ -160,29 +206,31 @@
                 </div>
                 <hr>
                 <div class="control-group">
-                    <label for="intensity">速さ (<span id="intensity-value">2500</span>ms)</label>
-                    <input type="range" id="intensity" min="20" max="5000" value="2500" oninput="setIntensity()">
+                    <label for="intensity-range">速さ (<span id="intensity-value">2500</span>ms)</label>
+                    <input type="range" id="intensity-range" min="20" max="5000" value="2500">
                 </div>
             </div>
         </div>
     </div>
+    
+    <div id="results-page" style="display: none;">
+        <h2>設定結果</h2>
+        <p>・選択した色：<span id="result-color"></span></p>
+        <p>・選択した発光パターン：<span id="result-pattern"></span></p>
+        <p>・選択した速さ：<span id="result-intensity"></span></p>
         
-    <!-- 強制退出画面 -->
-    <div id="forced-exit-page" style="display: none;">
-        <h1>時間切れ</h1>
-        <p>タスクの制限時間（5分）を超過しました。</p>
-        <p>大変恐れ入りますが、この画面を閉じてタスクを終了してください。</p>
-    </div>
-
+        <button id="next-task-button">次のタスクへ</button>
+    </div>
+    
     <!-- 最終ページ -->
     <div id="final-page" style="display: none;">
         <h2>ご協力ありがとうございました</h2>
-        <p>「Yahooクラウドソーシング」で以下のパスワードを入力してください。</p>
+        <p>Googleフォームで以下のパスワードを入力してください。</p>
         <p>（報酬のお支払いのために必要です）</p>
         <p></p>
         <p>パスワード：<span id="password-display"></span></p>
         <p></p>
-        <p><strong>パスワードを入力するまで、このページを閉じないでください。</strong></p>
+        <p>パスワードを入力するまで、このページを閉じないでください。</p>
         <p>※一度このページを閉じると、上記のパスワードは表示できません。</p>
     </div>
 
@@ -190,7 +238,6 @@
     <div id="confirmation-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <p id="confirmation-message">終了すると設定の修正はできません。</p>
-                <!---p id="confirmation-message">よろしいですか？</p--->
             <div class="modal-buttons">
                 <button id="confirm-no">キャンセル</button>
                 <button id="confirm-yes">終了</button>
@@ -198,10 +245,13 @@
         </div>
     </div>
 
-    <!-- 警告ポップアップ (HTMLには含まず、JSで動的に生成) -->
+    <div id="forced-exit-page" style="display: none;">
+        <h1>時間切れです</h1>
+        <p>5分間の制限時間内にタスクを完了できませんでした。</p>
+        <p>申し訳ございませんが、このタスクは中断となります。</p>
+        <p>Yahoo!クラウドソーシングでこのタスクを中断し、この画面を閉じてください。</p>
+    </div>
 
     <script src="script.js"></script>
 </body>
 </html>
-
-
