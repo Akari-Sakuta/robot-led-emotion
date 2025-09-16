@@ -3,8 +3,16 @@ const leftEyeLed = document.getElementById('left-eye-led');
 const rightEyeLed = document.getElementById('right-eye-led');
 const intensityValueSpan = document.getElementById('intensity-value');
 let currentColor = '#ff0000'; // 現在選択されている色を保持する変数 (カラーコード形式に)
-const colorWheelCanvas = document.getElementById('color-wheel');
+const colorWheelCanvas = document.getElementById('color-wheel-canvas');
 const ctx = colorWheelCanvas ? colorWheelCanvas.getContext('2d') : null;
+
+// 練習用ロボットのDOM要素の取得
+const practiceLeftEyeLed = document.getElementById('practice-left-eye-led');
+const practiceRightEyeLed = document.getElementById('practice-right-eye-led');
+const practiceColorWheelCanvas = document.getElementById('practice-color-wheel-canvas');
+const practiceCtx = practiceColorWheelCanvas ? practiceColorWheelCanvas.getContext('2d') : null;
+const practiceIntensityValueSpan = document.getElementById('practice-intensity-value');
+let practiceCurrentColor = '#ff0000'; // 練習用ページの色を保持する変数
 
 // 選択項目を保持するグローバル変数
 // 初期値は、ページの初期表示値に合わせて設定する
@@ -59,6 +67,7 @@ let backButton;
 let startButton;
 let submitSelectionButton;
 let taskIntroButton;
+let startMainButton;
 let confirmYesButton;
 let confirmNoButton;
 
@@ -89,10 +98,10 @@ const PARTICIPANT_FORM_ENTRIES = {
 /**
  * canvasにグラデーションの円環を描画する関数
  */
-function drawColorWheel() {
+function drawColorWheel(canvas, ctx) {
     if (!ctx) return;
-    const centerX = colorWheelCanvas.width / 2;
-    const centerY = colorWheelCanvas.height / 2;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
     const outerRadius = 75;
 
     // グラデーションの作成
@@ -117,14 +126,14 @@ function drawColorWheel() {
 /**
  * canvasがクリックされた位置から色を取得する関数
  */
-function getColorFromWheel(e) {
+function getColorFromWheel(e, canvas, ctx) {
     if (!ctx) return;
-    const rect = colorWheelCanvas.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    const centerX = colorWheelCanvas.width / 2;
-    const centerY = colorWheelCanvas.height / 2;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
     
     // クリック位置の角度を計算する
     let angle = Math.atan2(y - centerY, x - centerX) * 180 / Math.PI;
@@ -161,90 +170,73 @@ function getColorFromWheel(e) {
     const hexColor = '#' + ('00' + (Math.round(r * 255)).toString(16)).slice(-2) +
         ('00' + (Math.round(g * 255)).toString(16)).slice(-2) +
         ('00' + (Math.round(b * 255)).toString(16)).slice(-2);
-        
-    setColor(hexColor);
+    
+    return hexColor;
 }
 
 /**
  * RGBから16進数に変換するヘルパー関数
  */
 function rgbToHex(r, g, b) {
+    if (typeof r === 'string' && r.startsWith('rgb')) {
+        const parts = r.match(/\d+/g).map(Number);
+        r = parts[0];
+        g = parts[1];
+        b = parts[2];
+    }
     if (r > 255 || g > 255 || b > 255) throw "Invalid color component";
     return ((r << 16) | (g << 8) | b).toString(16);
 }
 
 /**
- * 色選択ボタンがクリックされた時の処理
- * @param {string} color - 選択されたカラーコード (例: '#ff0000')
+ * 汎用的な目の状態更新関数
  */
-function setColor(color) { 
+function updateEyeState(targetLed, targetPattern, targetIntensity) {
     isEyeActive = true;
     hasMadeSelection = true;
-    currentColor = color;
-    selectedColorIndex = color;
-    const currentPattern = document.getElementById('pattern').value;
-    const currentIntensity = document.getElementById('intensity').value;
-    updateLeds(currentColor, currentPattern, currentIntensity);
-    saveCurrentSelection();
-}
+    
+    const pageId = targetLed === leftEyeLed ? 'robot-page' : 'practice-page';
+    
+    const color = (pageId === 'robot-page') ? selectedColorIndex : getComputedStyle(practiceLeftEyeLed).backgroundColor;
+    const pattern = (pageId === 'robot-page') ? document.getElementById('pattern-select').value : document.getElementById('practice-pattern-select').value;
+    const intensity = (pageId === 'robot-page') ? document.getElementById('intensity-range').value : document.getElementById('practice-intensity-range').value;
 
-/**
- * パターンが変更された時の処理
- */
-function setPattern() {
-    isEyeActive = true;
-    hasMadeSelection = true;
-    const patternSelect = document.getElementById('pattern');
-    const currentPattern = patternSelect.value;
-    const currentIntensity = document.getElementById('intensity').value;
-    selectedPatternIndex = patternSelect.selectedIndex + 1;
-    updateLeds(currentColor, currentPattern, currentIntensity);
-    saveCurrentSelection();
-}
+    updateLeds(
+        targetLed,
+        (targetLed === leftEyeLed) ? rightEyeLed : practiceRightEyeLed,
+        color,
+        pattern,
+        intensity
+    );
 
-/**
- * 速さが変更された時の処理
- */
-function setIntensity() {
-    isEyeActive = true;
-    hasMadeSelection = true;
-    const currentPattern = document.getElementById('pattern').value;
-    const currentIntensity = document.getElementById('intensity').value;
-    selectedIntensityIndex = currentIntensity;
-    intensityValueSpan.textContent = currentIntensity;
-    updateLeds(currentColor, currentPattern, currentIntensity);
-    saveCurrentSelection();
-}
-
-/**
- * 現在の選択内容を保存する関数
- * 各UI操作の直後に呼び出すことで、リアルタイムに状態を保存します。
- */
-function saveCurrentSelection() {
-    const currentTaskData = {
-        color: selectedColorIndex,
-        pattern: selectedPatternIndex,
-        intensity: selectedIntensityIndex
-    };
-    savedSelections[currentSet - 1] = currentTaskData;
+    if (pageId === 'robot-page') {
+        selectedPatternIndex = document.getElementById('pattern-select').selectedIndex + 1;
+        selectedIntensityIndex = intensity;
+        intensityValueSpan.textContent = intensity;
+        saveCurrentSelection();
+    } else {
+        practiceIntensityValueSpan.textContent = intensity;
+    }
 }
 
 /**
  * LEDの表示を更新するメイン関数
  * ユーザーの選択に応じて、LEDのスタイルとアニメーションを適用します。
+ * @param {HTMLElement} leftLed - 左目のLED要素
+ * @param {HTMLElement} rightLed - 右目のLED要素
  * @param {string} color - 選択された色
  * @param {string} pattern - 選択されたパターン
  * @param {number} intensity - 選択された強度
  */
-function updateLeds(color, pattern, intensity) {
+function updateLeds(leftLed, rightLed, color, pattern, intensity) {
     // もし目が非アクティブ状態なら、グレーのままアニメーションを停止
     if (!isEyeActive) {
-        leftEyeLed.style.cssText = '';
-        rightEyeLed.style.cssText = '';
-        leftEyeLed.style.backgroundColor = '#808080';
-        rightEyeLed.style.backgroundColor = '#808080';
-        leftEyeLed.style.animationName = 'none';
-        rightEyeLed.style.animationName = 'none';
+        leftLed.style.cssText = '';
+        rightLed.style.cssText = '';
+        leftLed.style.backgroundColor = '#808080';
+        rightLed.style.backgroundColor = '#808080';
+        leftLed.style.animationName = 'none';
+        rightLed.style.animationName = 'none';
         return;
     }
     
@@ -252,24 +244,24 @@ function updateLeds(color, pattern, intensity) {
     const duration = intensity;
 
     // すべてのスタイルをリセット
-    leftEyeLed.style.cssText = '';
-    rightEyeLed.style.cssText = '';
-    leftEyeLed.style.animationName = 'none';
-    rightEyeLed.style.animationName = 'none';
-    leftEyeLed.classList.remove('rotate', 'split-drop', 'split-up');
-    rightEyeLed.classList.remove('rotate', 'split-drop', 'split-up');
+    leftLed.style.cssText = '';
+    rightLed.style.cssText = '';
+    leftLed.style.animationName = 'none';
+    rightLed.style.animationName = 'none';
+    leftLed.classList.remove('rotate', 'split-drop', 'split-up');
+    rightLed.classList.remove('rotate', 'split-drop', 'split-up');
     
     // 疑似要素のスタイルをリセットするための処理
-    leftEyeLed.style.removeProperty('--split-drop-gradient');
-    rightEyeLed.style.removeProperty('--split-drop-gradient');
-    leftEyeLed.style.removeProperty('--split-up-gradient');
-    rightEyeLed.style.removeProperty('--split-up-gradient');
-    leftEyeLed.style.removeProperty('--animation-duration');
-    rightEyeLed.style.removeProperty('--animation-duration');
+    leftLed.style.removeProperty('--split-drop-gradient');
+    rightLed.style.removeProperty('--split-drop-gradient');
+    leftLed.style.removeProperty('--split-up-gradient');
+    rightLed.style.removeProperty('--split-up-gradient');
+    leftLed.style.removeProperty('--animation-duration');
+    rightLed.style.removeProperty('--animation-duration');
 
     // わずかな遅延を挟んでから、新しいアニメーションを適用
-    void leftEyeLed.offsetWidth;
-    void rightEyeLed.offsetWidth;
+    void leftLed.offsetWidth;
+    void rightLed.offsetWidth;
     
     // RGBから16進数に変換するヘルパー関数
     function hexToRgb(hex) {
@@ -287,65 +279,65 @@ function updateLeds(color, pattern, intensity) {
     // --- 各発光パターンの処理 ---
     if (pattern === 'step-blink') {
         // 点滅（断続）: 透明度を瞬間的に切り替えて点滅を表現
-        leftEyeLed.style.backgroundColor = rgbaColor;
-        rightEyeLed.style.backgroundColor = rgbaColor;
-        leftEyeLed.style.border = `4px solid ${color}`;
-        rightEyeLed.style.border = `4px solid ${color}`;
-        leftEyeLed.style.animationName = 'step-blink';
-        rightEyeLed.style.animationName = 'step-blink';
+        leftLed.style.backgroundColor = rgbaColor;
+        rightLed.style.backgroundColor = rgbaColor;
+        leftLed.style.border = `4px solid ${color}`;
+        rightLed.style.border = `4px solid ${color}`;
+        leftLed.style.animationName = 'step-blink';
+        rightLed.style.animationName = 'step-blink';
     } else if (pattern === 'fade-blink') {
         // 点滅（滑らか）: 透明度を滑らかに変化させてフェードイン・アウトを表現
-        leftEyeLed.style.backgroundColor = rgbaColor;
-        rightEyeLed.style.backgroundColor = rgbaColor;
-        leftEyeLed.style.border = `4px solid ${color}`;
-        rightEyeLed.style.border = `4px solid ${color}`;
-        leftEyeLed.style.animationName = 'fade-blink';
-        rightEyeLed.style.animationName = 'fade-blink';
+        leftLed.style.backgroundColor = rgbaColor;
+        rightLed.style.backgroundColor = rgbaColor;
+        leftLed.style.border = `4px solid ${color}`;
+        rightLed.style.border = `4px solid ${color}`;
+        leftLed.style.animationName = 'fade-blink';
+        rightLed.style.animationName = 'fade-blink';
     } else if (pattern === 'rotate' || pattern === 'asymmetric-rotate') {
         // 回転パターン: conic-gradientで光る扇形を表現
         const conicGradient = `conic-gradient(from -65deg, ${rgbaColor} 0deg, ${rgbaColor} 130deg, transparent 130deg 360deg)`;
-        leftEyeLed.style.backgroundImage = conicGradient;
-        rightEyeLed.style.backgroundImage = conicGradient;
-        leftEyeLed.classList.add('rotate');
-        rightEyeLed.classList.add('rotate');
+        leftLed.style.backgroundImage = conicGradient;
+        rightLed.style.backgroundImage = conicGradient;
+        leftLed.classList.add('rotate');
+        rightLed.classList.add('rotate');
         if (pattern === 'rotate') {
-            leftEyeLed.style.animationName = 'rotate-sector';
-            rightEyeLed.style.animationName = 'rotate-sector';
+            leftLed.style.animationName = 'rotate-sector';
+            rightLed.style.animationName = 'rotate-sector';
         } else if (pattern === 'asymmetric-rotate') {
-            leftEyeLed.style.animationName = 'rotate-sector-reverse';
-            rightEyeLed.style.animationName = 'rotate-sector';
+            leftLed.style.animationName = 'rotate-sector-reverse';
+            rightLed.style.animationName = 'rotate-sector';
         }
     } else if (pattern === 'split-drop') {
         // 下へ流れる（左右分割）
-        leftEyeLed.classList.add('split-drop');
-        rightEyeLed.classList.add('split-drop');
+        leftLed.classList.add('split-drop');
+        rightLed.classList.add('split-drop');
         const splitGradient = `
             conic-gradient(from -22deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg),
             conic-gradient(from -22deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg)
         `;
-        leftEyeLed.style.setProperty('--split-drop-gradient', splitGradient);
-        rightEyeLed.style.setProperty('--split-drop-gradient', splitGradient);
-        leftEyeLed.style.setProperty('--animation-duration', duration + 'ms');
-        rightEyeLed.style.setProperty('--animation-duration', duration + 'ms');
+        leftLed.style.setProperty('--split-drop-gradient', splitGradient);
+        rightLed.style.setProperty('--split-drop-gradient', splitGradient);
+        leftLed.style.setProperty('--animation-duration', duration + 'ms');
+        rightLed.style.setProperty('--animation-duration', duration + 'ms');
     } else if (pattern === 'split-up') {
         // 上へ流れる（左右分割）
-        leftEyeLed.classList.add('split-up');
-        rightEyeLed.classList.add('split-up');
+        leftLed.classList.add('split-up');
+        rightLed.classList.add('split-up');
         const upGradient = `
             conic-gradient(from 158deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg),
             conic-gradient(from 158deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg)
         `;
-        leftEyeLed.style.setProperty('--split-up-gradient', upGradient);
-        rightEyeLed.style.setProperty('--split-up-gradient', upGradient);
-        leftEyeLed.style.setProperty('--animation-duration', duration + 'ms');
-        rightEyeLed.style.setProperty('--animation-duration', duration + 'ms');
+        leftLed.style.setProperty('--split-up-gradient', upGradient);
+        rightLed.style.setProperty('--split-up-gradient', upGradient);
+        leftLed.style.setProperty('--animation-duration', duration + 'ms');
+        rightLed.style.setProperty('--animation-duration', duration + 'ms');
     }
     
     // 共通のアニメーション設定
-    leftEyeLed.style.animationDuration = duration + 'ms';
-    rightEyeLed.style.animationDuration = duration + 'ms';
-    leftEyeLed.style.animationPlayState = 'running';
-    rightEyeLed.style.animationPlayState = 'running';
+    leftLed.style.animationDuration = duration + 'ms';
+    rightLed.style.animationDuration = duration + 'ms';
+    leftLed.style.animationPlayState = 'running';
+    rightLed.style.animationPlayState = 'running';
 }
 
 /**
@@ -402,24 +394,66 @@ function showForcedExitPage() {
 }
 
 /**
+ * 練習ページを表示する関数
+ */
+function showPracticePage() {
+    document.getElementById('task-intro-page').style.display = 'none';
+    document.getElementById('practice-page').style.display = 'flex';
+    
+    // 練習ページではタイマーを停止
+    clearInterval(timerInterval);
+    
+    // 練習用のロボットの目を初期化（グレー表示）
+    isEyeActive = false;
+    updateLeds(practiceLeftEyeLed, practiceRightEyeLed, '#808080', 'step-blink', 2500);
+    drawColorWheel(practiceColorWheelCanvas, practiceCtx); // 練習ページ用のカラーホイールも描画
+
+    // 練習用コントロールパネルのイベントリスナーを設定
+    document.getElementById('practice-color-wheel-canvas').addEventListener('click', (e) => {
+        isEyeActive = true;
+        practiceCurrentColor = getColorFromWheel(e, practiceColorWheelCanvas, practiceCtx);
+        updateLeds(practiceLeftEyeLed, practiceRightEyeLed, practiceCurrentColor, document.getElementById('practice-pattern-select').value, document.getElementById('practice-intensity-range').value);
+    });
+
+    document.getElementById('practice-pattern-select').addEventListener('change', (e) => {
+        isEyeActive = true;
+        const selectedPattern = e.target.value;
+        const currentIntensity = document.getElementById('practice-intensity-range').value;
+        updateLeds(practiceLeftEyeLed, practiceRightEyeLed, practiceCurrentColor, selectedPattern, currentIntensity);
+    });
+
+    document.getElementById('practice-intensity-range').addEventListener('input', (e) => {
+        isEyeActive = true;
+        const selectedIntensity = e.target.value;
+        practiceIntensityValueSpan.textContent = selectedIntensity;
+        const currentPattern = document.getElementById('practice-pattern-select').value;
+        updateLeds(practiceLeftEyeLed, practiceRightEyeLed, practiceCurrentColor, currentPattern, selectedIntensity);
+    });
+}
+
+
+/**
  * ページの初期状態をリセットし、メインページを開始する関数
  */
 function startMainPage() {
-    document.getElementById('intro-page').style.display = 'none';
-    document.getElementById('selection-page').style.display = 'none';
-    document.getElementById('exit-page').style.display = 'none';
-    document.getElementById('task-intro-page').style.display = 'none';
+    document.getElementById('practice-page').style.display = 'none';
     document.getElementById('robot-page').style.display = 'block';
     document.querySelector('h1').style.display = 'block';
     document.querySelector('p').style.display = 'block';
     document.getElementById('timer-container').style.display = 'block';
     document.getElementById('end-button-container').style.display = 'block';
     document.querySelector('.container').style.display = 'flex';
-    document.querySelector('.back-button-container').style.display = 'block';
-    drawColorWheel();
+    drawColorWheel(colorWheelCanvas, ctx);
     document.getElementById('final-page').style.display = 'none';
     document.getElementById('forced-exit-page').style.display = 'none';
     document.getElementById('end-button').style.display = 'none';
+
+    // タスク1では戻るボタンを表示しない
+    if (currentSet === 1) {
+        document.querySelector('.back-button-container').style.display = 'none';
+    } else {
+        document.querySelector('.back-button-container').style.display = 'block';
+    }
 
     // タイマーをリセットして再開
     clearInterval(timerInterval);
@@ -449,7 +483,7 @@ function startMainPage() {
     // UIの状態を復元
     const currentSelection = savedSelections[currentSet - 1];
     const prevColor = currentSelection.color;
-    const prevPatternValue = document.getElementById('pattern').options[currentSelection.pattern - 1].value;
+    const prevPatternValue = document.getElementById('pattern-select').options[currentSelection.pattern - 1].value;
     const prevIntensityValue = currentSelection.intensity;
 
     // UI要素の値を設定
@@ -457,8 +491,8 @@ function startMainPage() {
     selectedColorIndex = prevColor;
     selectedPatternIndex = currentSelection.pattern;
     selectedIntensityIndex = prevIntensityValue;
-    document.getElementById('pattern').value = prevPatternValue;
-    document.getElementById('intensity').value = prevIntensityValue;
+    document.getElementById('pattern-select').value = prevPatternValue;
+    document.getElementById('intensity-range').value = prevIntensityValue;
     intensityValueSpan.textContent = prevIntensityValue;
 
     // タスクへの初回アクセスかどうかをチェック
@@ -472,8 +506,8 @@ function startMainPage() {
     }
 
     // ロボットの目を更新
-    updateLeds(prevColor, prevPatternValue, prevIntensityValue);
-
+    updateLeds(leftEyeLed, rightEyeLed, prevColor, prevPatternValue, prevIntensityValue);
+    
     // 最終ページに到達した場合は戻るボタンを非表示にする
     if (currentSet === 1) {
         document.getElementById('back-button').textContent = '説明画面へ戻る'
@@ -525,12 +559,15 @@ function showWarningModal(message) {
         okButton.id = 'ok-button';
         okButton.textContent = '続ける';
         // 警告ポップアップのボタンにスタイルを適用
-        okButton.classList.add('modal-buttons');
+        okButton.style.padding = '10px 20px';
+        okButton.style.fontSize = '1rem';
+        okButton.style.borderRadius = '5px';
+        okButton.style.border = 'none';
+        okButton.style.cursor = 'pointer';
         okButton.style.backgroundColor = '#007bff';
         okButton.style.color = 'white';
-        okButton.style.border = 'none';
-        okButton.style.borderRadius = '5px';
         okButton.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+        okButton.style.marginTop = '20px';
 
         // ホバー効果も追加
         okButton.onmouseover = () => { okButton.style.backgroundColor = '#0056b3'; };
@@ -644,7 +681,6 @@ async function sendDataToGoogleForm(allData) {
     const params = new URLSearchParams(dataToSend);
     const url = `${GOOGLE_FORM_URL}?${params.toString()}`;
     
-    //ターミナルで確認可能
     console.log('--- Googleフォームに送信するデータ ---');
     console.log(dataToSend);
     console.log('---');
@@ -686,7 +722,7 @@ function updateTimer() {
     timerDisplay.textContent = `${formattedMinutes}:${formattedSeconds}`;
     
     // タイマーが終了ボタンを表示するロジックを修正
-    if (minutes >= 1) {
+    if (minutess >= 1) {
         document.getElementById('end-button').classList.remove('disabled');
         document.getElementById('end-button').style.display = 'block';
         taskCompleted[currentSet - 1] = true;
@@ -707,6 +743,18 @@ function startTimer() {
 }
 
 /**
+ * 選択内容を保存する関数
+ */
+function saveCurrentSelection() {
+    const currentTaskData = {
+        color: selectedColorIndex,
+        pattern: selectedPatternIndex,
+        intensity: selectedIntensityIndex
+    };
+    savedSelections[currentSet - 1] = currentTaskData;
+}
+
+/**
  *ページの初期化処理とタイマー機能
  */ 
 document.addEventListener('DOMContentLoaded', () => {
@@ -715,6 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startButton = document.getElementById('start-button');
     submitSelectionButton = document.getElementById('submit-selection-button');
     taskIntroButton = document.getElementById('task-intro-button');
+    startMainButton = document.getElementById('start-main-button');
     confirmYesButton = document.getElementById('confirm-yes');
     confirmNoButton = document.getElementById('confirm-no');
 
@@ -753,7 +802,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 「タスクを開始する」ボタンがクリックされたときの処理
     taskIntroButton.addEventListener('click', () => {
-        drawColorWheel();
+        showPracticePage();
+    });
+
+    // 「本番のタスクを開始する」ボタンがクリックされたときの処理
+    startMainButton.addEventListener('click', () => {
         startMainPage();
     });
 
@@ -762,33 +815,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const isSelectionPageVisible = document.getElementById('selection-page').style.display === 'flex';
         const isTaskIntroPageVisible = document.getElementById('task-intro-page').style.display === 'flex';
         const isRobotPageVisible = document.getElementById('robot-page').style.display === 'block';
+        const isPracticePageVisible = document.getElementById('practice-page').style.display === 'flex';
 
         if (isSelectionPageVisible) {
-            showIntroPage(); // 選択画面からイントロ画面に戻る
+            showIntroPage();
         } else if (isTaskIntroPageVisible) {
             showSelectionPage();
+        } else if (isPracticePageVisible) {
+            showTaskIntroPage();
         } else if (isRobotPageVisible && currentSet === 1) {
-            showTaskIntroPage(); // タスク1のロボットページからタスク説明画面に戻る
+            showPracticePage();
         } else if (isRobotPageVisible && currentSet > 1) {
             currentSet--;
-            startMainPage(); // 1つ前のロボットページに戻る
+            startMainPage();
         }
     });
 
     // 「次のタスクへ（終了）」ボタンがクリックされた時の処理
     endButton.addEventListener('click', () => {
         if (endButton.classList.contains('disabled')) {
-            return; // ボタンが無効な場合は何もしない
-        }
-        
-        // ユーザーが選択を行っていない場合は警告を表示
-        if (!hasMadeSelection) {
-            showWarningModal('組み合わせを作成してください'); // 警告ポップアップを表示
             return;
         }
-
+        
+        if (!hasMadeSelection) {
+            showWarningModal('組み合わせを作成してください');
+            return;
+        }
+        
         if (currentSet === totalSets) {
-            showEndConfirmationModal(); // 終了確認ポップアップを表示
+            showEndConfirmationModal();
         } else {
             currentSet++;
             startMainPage();
@@ -804,10 +859,50 @@ document.addEventListener('DOMContentLoaded', () => {
     confirmNoButton.addEventListener('click', () => {
         closeModal();
     });
-
-    if (colorWheelCanvas) {
-        colorWheelCanvas.addEventListener('click', getColorFromWheel);
-    }
+    
+    // 汎用イベントリスナーをまとめて設定
+    document.getElementById('color-wheel-canvas').addEventListener('click', (e) => {
+        isEyeActive = true;
+        hasMadeSelection = true;
+        selectedColorIndex = getColorFromWheel(e, colorWheelCanvas, ctx);
+        updateLeds(leftEyeLed, rightEyeLed, selectedColorIndex, document.getElementById('pattern-select').value, document.getElementById('intensity-range').value);
+        saveCurrentSelection();
+    });
+    document.getElementById('pattern-select').addEventListener('change', () => {
+        isEyeActive = true;
+        hasMadeSelection = true;
+        selectedPatternIndex = document.getElementById('pattern-select').selectedIndex + 1;
+        updateLeds(leftEyeLed, rightEyeLed, selectedColorIndex, document.getElementById('pattern-select').value, document.getElementById('intensity-range').value);
+        saveCurrentSelection();
+    });
+    document.getElementById('intensity-range').addEventListener('input', () => {
+        isEyeActive = true;
+        hasMadeSelection = true;
+        selectedIntensityIndex = document.getElementById('intensity-range').value;
+        intensityValueSpan.textContent = selectedIntensityIndex;
+        updateLeds(leftEyeLed, rightEyeLed, selectedColorIndex, document.getElementById('pattern-select').value, selectedIntensityIndex);
+        saveCurrentSelection();
+    });
+    
+    // 練習用ページ用のUIをアクティブにする
+    document.getElementById('practice-color-wheel-canvas').addEventListener('click', (e) => {
+        isEyeActive = true;
+        practiceCurrentColor = getColorFromWheel(e, practiceColorWheelCanvas, practiceCtx);
+        updateLeds(practiceLeftEyeLed, practiceRightEyeLed, practiceCurrentColor, document.getElementById('practice-pattern-select').value, document.getElementById('practice-intensity-range').value);
+    });
+    document.getElementById('practice-pattern-select').addEventListener('change', (e) => {
+        isEyeActive = true;
+        const selectedPattern = e.target.value;
+        const currentIntensity = document.getElementById('practice-intensity-range').value;
+        updateLeds(practiceLeftEyeLed, practiceRightEyeLed, practiceCurrentColor, selectedPattern, currentIntensity);
+    });
+    document.getElementById('practice-intensity-range').addEventListener('input', (e) => {
+        isEyeActive = true;
+        const selectedIntensity = e.target.value;
+        practiceIntensityValueSpan.textContent = selectedIntensity;
+        const currentPattern = document.getElementById('practice-pattern-select').value;
+        updateLeds(practiceLeftEyeLed, practiceRightEyeLed, practiceCurrentColor, currentPattern, selectedIntensity);
+    });
 
     // アプリケーションはここからスタート
     showIntroPage();
