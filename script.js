@@ -722,7 +722,7 @@ function updateTimer() {
     timerDisplay.textContent = `${formattedMinutes}:${formattedSeconds}`;
     
     // タイマーが終了ボタンを表示するロジックを修正
-    if (minutess >= 1) {
+    if (seconds >= 5) {
         document.getElementById('end-button').classList.remove('disabled');
         document.getElementById('end-button').style.display = 'block';
         taskCompleted[currentSet - 1] = true;
@@ -907,3 +907,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // アプリケーションはここからスタート
     showIntroPage();
 });
+
