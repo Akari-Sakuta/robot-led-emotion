@@ -45,7 +45,7 @@ let currentSet = 1;
 const totalSets = 10;
 const emotionList = [
     '怒り',
-    '黄、点滅(チカチカ)、速さ1200~1400ms',
+    '黄、点滅（滑らか）、速さ1200~1400ms',
     '恐れ',
     '信頼',
     '嫌悪',
@@ -77,7 +77,7 @@ const GOOGLE_FORM_URL = 'https://docs.google.com/forms/u/0/d/e/1FAIpQLSfq_hRIW0Y
 // 各タスク（感情）ごとの質問IDをオブジェクトにまとめて管理
 const GOOGLE_FORM_ENTRIES = {
     '怒り': { color: 'entry.491303356', pattern: 'entry.409806865', intensity: 'entry.1878336323' },
-    '黄、点滅(チカチカ)、速さ1200~1400ms': { color: 'entry.1204286337', pattern: 'entry.802237711', intensity: 'entry.1801506477' },
+    '黄、点滅（滑らか）、速さ1200~1400ms': { color: 'entry.1204286337', pattern: 'entry.802237711', intensity: 'entry.1801506477' },
     '恐れ': { color: 'entry.777098917', pattern: 'entry.589697965', intensity: 'entry.2113351545' },
     '信頼': { color: 'entry.1742265329', pattern: 'entry.245111734', intensity: 'entry.2028868153' },
     '嫌悪': { color: 'entry.350150990', pattern: 'entry.1570778382', intensity: 'entry.833062927' },
@@ -907,5 +907,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // アプリケーションはここからスタート
     showIntroPage();
 });
+
 
 
