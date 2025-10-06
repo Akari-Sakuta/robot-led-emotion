@@ -722,7 +722,7 @@ function updateTimer() {
     timerDisplay.textContent = `${formattedMinutes}:${formattedSeconds}`;
     
     // タイマーが1分経過後に終了ボタンを表示するロジックを修正
-    if (seconds >= 3) {
+    if (minutes >= 1) {
         document.getElementById('end-button').classList.remove('disabled');
         document.getElementById('end-button').style.display = 'block';
         taskCompleted[currentSet - 1] = true;
@@ -907,6 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // アプリケーションはここからスタート
     showIntroPage();
 });
+
 
 
 
