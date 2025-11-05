@@ -295,7 +295,7 @@ function updateLeds(leftLed, rightLed, color, pattern, intensity) {
         rightLed.style.animationName = 'fade-blink';
     } else if (pattern === 'rotate' || pattern === 'asymmetric-rotate') {
         // 回転パターン: conic-gradientで光る扇形を表現
-        const conicGradient = `conic-gradient(from -65deg, ${rgbaColor} 0deg, ${rgbaColor} 130deg, transparent 130deg 360deg)`;
+        const conicGradient = `conic-gradient(${rgbaColor} 0deg 5deg, transparent 60deg 300deg, ${rgbaColor} 355deg 360deg)`;
         leftLed.style.backgroundImage = conicGradient;
         rightLed.style.backgroundImage = conicGradient;
         leftLed.classList.add('rotate');
@@ -311,10 +311,7 @@ function updateLeds(leftLed, rightLed, color, pattern, intensity) {
         // 下へ流れる（左右分割）
         leftLed.classList.add('split-drop');
         rightLed.classList.add('split-drop');
-        const splitGradient = `
-            conic-gradient(from -22deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg),
-            conic-gradient(from -22deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg)
-        `;
+        const splitGradient = `conic-gradient(${rgbaColor} 0deg 5deg, transparent 60deg 300deg, ${rgbaColor} 355deg 360deg)`;
         leftLed.style.setProperty('--split-drop-gradient', splitGradient);
         rightLed.style.setProperty('--split-drop-gradient', splitGradient);
         leftLed.style.setProperty('--animation-duration', duration + 'ms');
@@ -323,10 +320,7 @@ function updateLeds(leftLed, rightLed, color, pattern, intensity) {
         // 上へ流れる（左右分割）
         leftLed.classList.add('split-up');
         rightLed.classList.add('split-up');
-        const upGradient = `
-            conic-gradient(from 158deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg),
-            conic-gradient(from 158deg, ${rgbaColor} 0deg, ${rgbaColor} 45deg, transparent 45deg, transparent 360deg)
-        `;
+        const upGradient = `conic-gradient(${rgbaColor} 0deg 5deg, transparent 60deg 300deg, ${rgbaColor} 355deg 360deg)`;
         leftLed.style.setProperty('--split-up-gradient', upGradient);
         rightLed.style.setProperty('--split-up-gradient', upGradient);
         leftLed.style.setProperty('--animation-duration', duration + 'ms');
@@ -907,6 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // アプリケーションはここからスタート
     showIntroPage();
 });
+
 
 
 
