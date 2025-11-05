@@ -88,7 +88,7 @@ p {
 .eye {
     width: 32px;
     height: 32px;
-    background-color: #808080; /* LED消灯部分（グレー）を常に表示 */
+    background-color: #bdbdbd; /* LED消灯部分（グレー）を常に表示 */
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -683,3 +683,4 @@ input.error {
 .modal-content p {
     text-align: left; /* ポップアップ内のpタグも左揃え */
 }
+
