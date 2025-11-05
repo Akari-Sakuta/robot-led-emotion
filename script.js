@@ -233,8 +233,8 @@ function updateLeds(leftLed, rightLed, color, pattern, intensity) {
     if (!isEyeActive) {
         leftLed.style.cssText = '';
         rightLed.style.cssText = '';
-        leftLed.style.backgroundColor = '#808080';
-        rightLed.style.backgroundColor = '#808080';
+        leftLed.style.backgroundColor = '#bdbdbd';
+        rightLed.style.backgroundColor = '#bdbdbd';
         leftLed.style.animationName = 'none';
         rightLed.style.animationName = 'none';
         return;
@@ -399,7 +399,7 @@ function showPracticePage() {
     
     // 練習用のロボットの目を初期化（グレー表示）
     isEyeActive = false;
-    updateLeds(practiceLeftEyeLed, practiceRightEyeLed, '#808080', 'step-blink', 2500);
+    updateLeds(practiceLeftEyeLed, practiceRightEyeLed, '#bdbdbd', 'step-blink', 2500);
     drawColorWheel(practiceColorWheelCanvas, practiceCtx); // 練習ページ用のカラーホイールも描画
 
     // 練習用コントロールパネルのイベントリスナーを設定
@@ -901,6 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // アプリケーションはここからスタート
     showIntroPage();
 });
+
 
 
 
