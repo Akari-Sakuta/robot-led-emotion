@@ -82,12 +82,12 @@ p {
     left: 51.5%;
     transform: translateX(-50%);
     display: flex;
-    gap: 46px; /* 目と目の間の間隔 */
+    gap: 42px; /* 目と目の間の間隔 */
 }
 /* 個々の目全体（LED消灯時のグレー部分） */
 .eye {
-    width: 32px;
-    height: 32px;
+    width: 42px; /* ★ 目全体の幅 */
+    height: 42px; /* ★ 目全体の高さ */
     background-color: #bdbdbd; /* LED消灯部分（グレー）を常に表示 */
     border-radius: 50%;
     display: flex;
@@ -97,8 +97,8 @@ p {
 }
 /* LED点灯部分 */
 .led {
-    width: 100%;
-    height: 100%;
+    width: 100%; /* 親要素(.eye)と同じ幅 (32px) */
+    height: 100%; /* 親要素(.eye)と同じ高さ (32px) */
     border-radius: 50%;
     box-sizing: border-box;
     animation-duration: 1s;
@@ -111,8 +111,8 @@ p {
 /* 黒目（瞳孔） */
 .eye::after {
     content: '';
-    width: 24px;
-    height: 24px;
+    width: 32px; /* ★ 黒目の幅 */
+    height: 32px; /* ★ 黒目の高さ */
     background-color: rgb(30, 30, 30);
     border-radius: 50%;
     position: absolute;
@@ -124,8 +124,8 @@ p {
 /* 目のハイライト（擬似要素で表現） */
 .eye::before {
     content: '';
-    width: 10px;
-    height: 10px;
+    width: 12px; /* ★ ハイライトの幅 */
+    height: 12px; /* ★ ハイライトの高さ */
     background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%); /* 中心が白く、外側が透明になるグラデーション */
     border-radius: 50%;
     position: absolute;
@@ -209,32 +209,16 @@ LEDアニメーションの定義
 
 /* 下へ流れるアニメーション（左右分割） */
 @keyframes split-drop-left {
-    0% {
-        opacity: 1;
-        transform: rotate(0deg);
-    }
-    50% {
-        opacity: 1;
-        transform: rotate(-180deg); }
-    55% { opacity: 0; }
-    100% {
-        opacity: 0;
-        transform: rotate(-360deg);
-    }
+    0% { opacity: 1; transform: rotate(0deg); }
+    50% { opacity: 1; transform: rotate(-180deg); }
+    55% { opacity: 0; transform: rotate(-180deg);  }
+    100% { opacity: 0; transform: rotate(-360deg); }
 }
 @keyframes split-drop-right {
-    0% {
-        opacity: 1;
-        transform: rotate(0deg);
-    }
-    50% {
-        opacity: 1;
-        transform: rotate(180deg); }
-    55% { opacity: 0; }
-    100% {
-        opacity: 0;
-        transform: rotate(360deg);
-    }
+    0% { opacity: 1; transform: rotate(0deg); }
+    50% { opacity: 1; transform: rotate(180deg); }
+    55% { opacity: 0; transform: rotate(180deg);  }
+    100% { opacity: 0; transform: rotate(360deg); }
 }
 /* split-dropパターン選択時のLEDに疑似要素を追加 */
 .led.split-drop {
@@ -276,34 +260,16 @@ LEDアニメーションの定義
 
 /* 上へ流れるアニメーション（左右分割） */
 @keyframes split-up-left {
-    0% {
-        opacity: 1;
-        transform: rotate(0deg);
-    }
-    50% {
-        opacity: 1;
-        transform: rotate(180deg);
-    }
-    55% { opacity: 0; }
-    100% {
-        opacity: 0;
-        transform: rotate(360deg);
-    }
+    0% { opacity: 1; transform: rotate(0deg); }
+    50% { opacity: 1; transform: rotate(180deg); }
+    55% { opacity: 0; transform: rotate(180deg);  }
+    100% { opacity: 0; transform: rotate(360deg); }
 }
 @keyframes split-up-right {
-    0% {
-        opacity: 1;
-        transform: rotate(0deg);
-    }
-    50% {
-        opacity: 1;
-        transform: rotate(-180deg);
-    }
-    55% { opacity: 0; }
-    100% {
-        opacity: 0;
-        transform: rotate(-360deg);
-    }
+    0% { opacity: 1; transform: rotate(0deg); }
+    50% { opacity: 1; transform: rotate(-180deg); }
+    55% { opacity: 0; transform: rotate(-180deg);  }
+    100% { opacity: 0; transform: rotate(-360deg); }
 }
 /* split-up パターン選択時のLEDスタイルを追加 */
 .led.split-up {
@@ -683,4 +649,3 @@ input.error {
 .modal-content p {
     text-align: left; /* ポップアップ内のpタグも左揃え */
 }
-
