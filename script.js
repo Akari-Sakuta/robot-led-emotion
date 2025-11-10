@@ -311,7 +311,10 @@ function updateLeds(leftLed, rightLed, color, pattern, intensity) {
         // 下へ流れる（左右分割）
         leftLed.classList.add('split-drop');
         rightLed.classList.add('split-drop');
-        const splitGradient = `conic-gradient(${rgbaColor} 0deg 5deg, transparent 60deg 300deg, ${rgbaColor} 355deg 360deg)`;
+        const splitGradient = `conic-gradient(${rgbaColor} 0deg 5deg, transparent 50deg 310deg, ${rgbaColor} 355deg 360deg)`;
+        // LED本体の背景を透明にする
+        leftLed.style.backgroundColor = 'transparent';
+        rightLed.style.backgroundColor = 'transparent';
         leftLed.style.setProperty('--split-drop-gradient', splitGradient);
         rightLed.style.setProperty('--split-drop-gradient', splitGradient);
         leftLed.style.setProperty('--animation-duration', duration + 'ms');
@@ -320,7 +323,10 @@ function updateLeds(leftLed, rightLed, color, pattern, intensity) {
         // 上へ流れる（左右分割）
         leftLed.classList.add('split-up');
         rightLed.classList.add('split-up');
-        const upGradient = `conic-gradient(${rgbaColor} 0deg 5deg, transparent 60deg 300deg, ${rgbaColor} 355deg 360deg)`;
+        // LED本体の背景を透明にする
+        leftLed.style.backgroundColor = 'transparent';
+        rightLed.style.backgroundColor = 'transparent';
+        const upGradient = `conic-gradient(from 180deg, ${rgbaColor} 0deg 5deg, transparent 50deg 310deg, ${rgbaColor} 355deg 360deg)`;
         leftLed.style.setProperty('--split-up-gradient', upGradient);
         rightLed.style.setProperty('--split-up-gradient', upGradient);
         leftLed.style.setProperty('--animation-duration', duration + 'ms');
@@ -715,7 +721,7 @@ function updateTimer() {
     const formattedSeconds = formatTime(seconds);
     timerDisplay.textContent = `${formattedMinutes}:${formattedSeconds}`;
     
-    // タイマーが1分経過後に終了ボタンを表示するロジックを修正
+    // タイマーが終了ボタンを表示するロジックを修正
     if (minutes >= 1) {
         document.getElementById('end-button').classList.remove('disabled');
         document.getElementById('end-button').style.display = 'block';
@@ -901,10 +907,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // アプリケーションはここからスタート
     showIntroPage();
 });
-
-
-
-
-
-
-
